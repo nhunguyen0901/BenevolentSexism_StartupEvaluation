@@ -1,0 +1,257 @@
+---
+title: "Descriptive Statistics and Correlation Analysis"
+format: html
+editor: visual
+execute:
+  cache: true
+---
+
+# Overview
+
+This document details the code and methodology used in the "Benevolent Sexism and the Gender Gap in Startup Evaluation" project. Here, we explore how benevolent sexism affects evaluations of startups. Key variables include:
+
+- Entrepreneur gender (`Condition`) coded as 0 = men entrepreneur and 1 = women entrepreneur.
+- Participant gender (`sex`) coded as 0 = men participants and 1 = women participants.
+- Participant benevolent sexism (`BS`) measured on a scale ranging from 1 to 6.
+- Participant hostile sexism (`HS`) measured on a scale ranging from 1 to 6.
+- Participant perceptions of startup viability (`viable`) measured on a scale ranging from 1 to 7.
+- Participant funding allocations (`Invest`) measured on a scale ranging from 0 to 100000
+
+This analysis is divided into two parts:
+
+-   Descriptive and Correlation Analysis for Study 1: We start by calculating means and standard deviations for the key variables. We then conduct correlation analyses to delve into the linear relationship between them.
+-   Automated Analysis for Studies 2 and 3: To maintain consistency and enhance efficiency, the second section automates the procedures above for Studies 2 and 3.
+
+
+# Analysis for Study 1
+
+## Data Loading and Preprocessing
+
+```{r setup}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+```{r}
+# Load the necessary libraries
+library(tidyverse)
+library(Hmisc)
+library(psych)
+library(kableExtra)
+
+# Load the data for Study 1
+study_1 <- readRDS("/Users/mac/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 1/Data/R data/study_1.rds")
+study_2 <- readRDS("~/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 2/Data/R data/study_2.rds")
+study_3 <- readRDS("~/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 3/Data/R data/study_3.rds")
+
+```
+
+## Descriptive Statistics
+
+In this section, we calculate means and standard deviations of the key variables for the whole sample, using the `summarise()` function from the `dplyr` package.
+
+```{r}
+# Summarize the data in 'study_1' and calculate the mean and standard deviation for our variables (sex, BS, HS, viable, Invest)
+overall_stats <- study_1 %>% 
+  summarise(
+    across(
+      c(sex, BS, HS, viable, Invest), 
+      list(mean = mean, sd = sd), 
+      na.rm = TRUE
+    )
+  ) %>% 
+  # After calculating the summary statistics, we add a new column named 'Condition'.
+  # This column is filled with the value 'Overall' to indicate that these statistics are for the entire dataset.
+  mutate(Condition = "Overall")
+```
+
+Next, we break down the dataset based on the experimental condition - whether the startup was led by men or women. First, let's see how many observations we have in each condition.
+
+```{r}
+study_1 %>%
+  mutate(Condition = case_when(
+      Condition == 0 ~ "Men entrepreneur",
+      Condition == 1 ~ "Women entrepreneur",
+      TRUE ~ as.character(Condition)  
+    )
+  ) %>%
+  { table(.$Condition) }  
+```
+
+Now we calculate descriptive statistics for each condition.
+
+
+```{r}
+# The 'Condition' column in 'study_1' is recoded to make the categories more descriptive.
+# Specifically, a numeric value of 0 is recoded to 'Men entrepreneur' and 1 to 'Women entrepreneur'.
+# Any other values are kept as is but converted to a string type for consistency.
+condition_stats <- study_1 %>%
+  mutate(
+    Condition = case_when(
+      Condition == 0 ~ "Men entrepreneur",
+      Condition == 1 ~ "Women entrepreneur",
+      TRUE ~ as.character(Condition)
+    )
+  ) %>% 
+  # Group the data by the newly updated 'Condition' column.
+  # Within each group (each unique condition), calculate the mean and standard deviation for the same set of variables.
+  group_by(Condition) %>%
+  summarise(
+    across(
+      c(sex, BS, HS, viable, Invest), 
+      list(mean = ~mean(., na.rm = TRUE), sd = ~sd(., na.rm = TRUE))
+    )
+  )
+```
+
+For easier comparison, we use `bind_rows()` to combine the overall and condition-specific statistics into one dataframe.
+
+```{r}
+# Combine the overall statistics with the by-condition statistics into a single dataframe.
+bind_rows(condition_stats, overall_stats) %>% mutate_if(is.numeric, round, 2) %>% kable()
+```
+
+## Correlation Analyses
+
+Once we have the mean and sd of our key variables, let's run some correlation analyses to uncover any significant linear relationships between them. We begin by computing a correlation matrix, using the `rcorr()` function from the `Hmisc` package.
+
+```{r}
+# Calculate Pearson correlation between 'sex', 'BS', 'HS', 'viable', and 'Invest'.
+rcorr(as.matrix(
+    study_1 %>% select(sex, BS, HS, viable, Invest)), type = "pearson")
+```
+
+We can also compute partial correlations to understand the relationship between two variables while controlling for the effect of another, using the `partial.r()` function from the `psych` package.
+
+First, we examine the relationship between Benevolent Sexism and our outcomes (startup viability and investment decisions), controlling for Hostile Sexism:
+
+```{r}
+study_1 %>% 
+  select(BS, viable, Invest, HS) %>% 
+  psych::partial.r(c("BS", "viable", "Invest"),"HS") %>% # Calculate partial correlations between 'BS', 'viable', 'Invest' controlling for 'HS'.
+  psych::corr.p(n=nrow(study_1)) # Compute p-values for these partial correlations based on the sample size of study_1.
+```
+
+Similarly, we then explore the relationship between Hostile Sexism and our outcomes, this time controlling for Benevolent Sexism:
+
+```{r}
+study_1 %>% 
+  select(BS, viable, Invest, HS) %>% 
+  psych::partial.r(c("HS", "viable", "Invest"),"BS") %>% # Calculate partial correlations between 'HS', 'viable', 'Invest' controlling for 'BS'.
+  psych::corr.p(n=nrow(study_1)) # Compute p-values for these partial correlations based on the sample size.
+```
+
+# Automated Analysis for Studies 2 and 3
+
+## Function for Descriptive Statistics and Correlation
+
+Next, we create a function, called `generate_study_analysis()`, to automate the steps applied above to Studies 2 and 3. This ensures consistency and efficiency in our analysis across multiple studies. 
+
+The function accepts three parameters: `data` (the dataset), `condition_var` (the variable denoting the experimental condition), and `key_vars` (a vector of the key variables under study). This function computes both overall and condition-specific descriptive statistics, followed by the calculation of a correlation matrix and partial correlations. All results are returned as a list. 
+
+```{r}
+# Define the function
+
+generate_study_analysis <- function(data, condition_var, key_vars) {
+
+  # Ensure that key variables are in character format 
+  key_vars <- as.character(key_vars)
+
+  # Calculate number of participants in each condition
+  sample_size <- data %>%
+  mutate(Condition = case_when(
+      .[[condition_var]] == 0 ~ "Men entrepreneur",
+      .[[condition_var]] == 1 ~ "Women entrepreneur",
+      TRUE ~ as.character(.[[condition_var]])
+    )) %>%
+    { table(.$Condition) }  
+  
+  # Calculate overall descriptive statistics
+  overall_stats <- data %>%
+    summarise(across(all_of(key_vars), 
+                     list(mean = ~mean(., na.rm = TRUE), sd = ~sd(., na.rm = TRUE)))) %>%
+    mutate(Condition = "Overall")
+
+  # Recode the condition variable and calculate descriptive statistics by condition
+  condition_stats <- data %>%
+    mutate(Condition = case_when(
+      .[[condition_var]] == 0 ~ "Men entrepreneur",
+      .[[condition_var]] == 1 ~ "Women entrepreneur",
+      TRUE ~ as.character(.[[condition_var]])
+    )) %>%
+    group_by(Condition) %>%
+    summarise(across(all_of(key_vars), 
+                     list(mean = ~mean(., na.rm = TRUE), sd = ~sd(., na.rm = TRUE))))
+
+  # Combine overall and condition-specific statistics
+  combined_stats <- bind_rows(condition_stats, overall_stats) %>% mutate_if(is.numeric, round, 2) %>% kable()
+
+  # Calculate correlation matrix
+  correlation_matrix <- rcorr(as.matrix(data %>% select(all_of(key_vars))), type = "pearson")
+
+  # Calculate partial correlations
+  partial_correlations_BS <- data %>% 
+    select(all_of(c(key_vars, "HS"))) %>% 
+    psych::partial.r(c("BS", "viable", "Invest"), "HS") %>% 
+    psych::corr.p(n = nrow(data))
+
+  partial_correlations_HS <- data %>% 
+    select(all_of(c(key_vars, "BS"))) %>% 
+    psych::partial.r(c("HS", "viable", "Invest"), "BS") %>% 
+    psych::corr.p(n = nrow(data))
+
+  # Return a list of all results
+  list(
+    SampleSize = sample_size,
+    DescriptiveStats = combined_stats,
+    CorrelationMatrix = correlation_matrix,
+    PartialCorrelationsBS = partial_correlations_BS,
+    PartialCorrelationsHS = partial_correlations_HS
+  )
+}
+```
+
+## Applying the Function to Study 2
+
+We then apply this function to the dataset for Study 2.
+```{r}
+# Applying the function to Study 2 data
+results_study_2 <- generate_study_analysis(data = study_2, condition_var = "Condition", key_vars = c("sex", "BS", "HS", "viable", "Invest"))
+
+# Output: Sample size
+results_study_2$SampleSize
+
+# Output: Descriptive Statistics
+results_study_2$DescriptiveStats
+
+# Output: Correlation Matrix
+results_study_2$CorrelationMatrix
+
+# Output: Partial Correlations for BS and HS
+results_study_2$PartialCorrelationsBS
+results_study_2$PartialCorrelationsHS
+```
+
+## Applying the Function to Study 3 
+
+Finally, we apply the function to the dataset for Study 3. 
+```{r}
+# Applying the function to Study 3 data
+results_study_3 <- generate_study_analysis(data = study_3, condition_var = "Condition", key_vars = c("sex", "BS", "HS", "viable", "Invest"))
+
+# Output: Sample size
+results_study_3$SampleSize
+
+# Output: Descriptive Statistics
+results_study_3$DescriptiveStats
+
+# Output: Correlation Matrix
+results_study_3$CorrelationMatrix
+
+# Output: Partial Correlations for BS and HS
+results_study_3$PartialCorrelationsBS
+results_study_3$PartialCorrelationsHS
+```
+
+# Summary 
+
+In the analyses above, we calculate means and standard deviations for our key variables and analyze the correlations between them. They set the stage for subsequent regression analyses examining the interaction between benevolent sexism and entrepreneur gender in predicting perceptions of startup viability.
