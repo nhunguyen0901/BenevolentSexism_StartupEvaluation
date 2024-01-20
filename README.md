@@ -6,7 +6,7 @@ This GitHub repository hosts the complete analyses for our study ["Benevolent Se
 
 <img src="interaction_study_1.png" alt="Key Findings Visualization" width="400"/>
 
-*Above: Graph illustrating the impact of benevolent sexism on startup evaluation based on the founder's gender (from Study 1).*
+*Above: Graph illustrating the impact of benevolent sexism on startup evaluation based on the founder's gender (from Study 1). The more evaluators endorse benevolent sexism, the more viable they perceive men-led startups, while benevolent sexism is unrelated to perceptions of viability of women-led startups*
 
 ## Repository Contents
 
