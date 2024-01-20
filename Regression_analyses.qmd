@@ -1,0 +1,469 @@
+---
+title: "Regression Analyses"
+author: Julie Nguyen
+format:
+  html:
+    toc: true
+    toc-location: left
+    embed-resources: true
+editor: visual
+execute:
+  cache: true
+---
+
+# Overview
+
+This documents presents the statistical analyses from our ["Benevolent Sexism and the Gender Gap in Startup Evaluation" study](https://journals.sagepub.com/doi/10.1177/10422587231178865) published in 2023 in the journal Entrepreneurship: Theory and Practice. We wanted to know whether startup evaluators' benevolent sexist attitudes impacts how viable they believe startups are, depending on the gender of the founder. To find out, we set up three experimental studies where we randomly assigned participants to evaluate startups led either by men or women, while also measuring their endorsement of benevolent sexism.  
+
+**Key variables**
+
+-   Entrepreneur gender (`Condition`): coded as 0 for men-led startups, 1 for women-led startups.
+-   Evaluator gender (`sex`): coded as 0 for men evaluators, 1 for women evaluators.
+-   Evaluator benevolent sexism (`BS_c`): measured on a 1-6 scale.
+-   Evaluator hostile sexism (`HS_c`): measured on a 1-6 scale.
+-   Evaluator perceptions of startup viability (`viable`): measured on a 1-7 scale.
+-   Evaluator funding allocations (`Invest`): ranging from 0 to 100,000 dollars.
+    
+**Main analysis**
+
+Our main analysis examines the two-way interaction between evaluators' benevolent sexism and the gender of the entrepreneur. This will tell us whether the gender of a startup's founder influences how an evaluator's benevolent sexist attitudes affect their judgment of the startup's potential.
+
+**Exploratory analysis**
+
+We also conduct some exploratory analyses:
+
+-   A three-way interaction between evaluator benevolent sexism, entrepreneur gender, and evaluator gender. This analysis sheds light on if men and women evaluators behave differently based on their benevolent sexist attitudes.
+-   A moderated mediation model examining how benevolent sexism and entrepreneur gender indirectly affect funding decisions through influencing perceptions of startup viability. This model helps us understand a potential pathway through which evaluator benevolent sexism might translate into financial outcomes for startups.
+    
+We start by performing these analyses for study 1. Then, to maintain consistency and enhance efficiency, we write a function to automate these analyses for Studies 2 and 3.
+
+# Data Loading and Preprocessing
+
+```{r setup}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+```{r}
+# Load the necessary libraries
+library(tidyverse)
+library(interactions)
+
+# Load the data for Study 1
+study_1 <- readRDS("/Users/mac/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 1/Data/R data/study_1.rds")
+study_2 <- readRDS("~/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 2/Data/R data/study_2.rds")
+study_3 <- readRDS("~/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 3/Data/R data/study_3.rds")
+
+```
+
+# Study 1
+
+## Regression analyses
+
+To explore how evaluator benevolent sexism impacts perceptions of startup viability differently based on the entrepreneur's gender, let's run a hierarchical moderated regression analysis, which unfolds in four key steps:
+
+-   **Step 1 - control variables**: includes evaluator hostile sexism and gender as controls.
+-   **Step 2 - main effects**: adds main effects of evaluator benevolent sexism and entrepreneur gender.
+-   **Step 3 - two-way interaction**: introduces the interaction between evaluator benevolent sexism and entrepreneur gender.
+-   **Step 4 - three-way interaction**: adds a three-way interaction between evaluator benevolent sexism, evaluator gender, and entrepreneur gender to explore if this interaction varies between men and women evaluators.
+
+Before diving in, we standardize our key variables (benevolent sexism, hostile sexism, viability) to have a mean of 0 and a standard deviation of 1. This makes it easier to interpret the regression coefficients, as changes are expressed in standard deviation units.
+
+```{r}
+# Standardizing variables for easy comparison
+study_1 <- study_1 %>% mutate(across(c(BS, HS, viable), ~scale(.), .names = "{.col}_s")) 
+```
+
+Let's quickly check to make sure our standardization worked.
+
+```{r}
+# Checking the standardized variables
+study_1 %>% select(BS, HS, viable, BS_s, HS_s, viable_s) %>% psych::describe()
+```
+
+Great, everything looks in order! Now, let's dive into our regression models.
+
+```{r}
+# Running the regression models
+
+# In the first model (m1), we include our control variables - evaluator hostile sexism and evaluator gender
+m1 <- lm(viable_s ~ HS_s + sex, data = study_1)
+
+# In the second model (m2), we add main effects of evaluator benevolent sexism and entrepreneur gender.
+m2 <- lm(viable_s ~ HS_s + sex + Condition + BS_s, data = study_1)
+
+# The third model (m3) introduces the interaction between benevolent sexism and entrepreneur gender.
+m3 <- lm(viable_s ~ HS_s + sex + Condition*BS_s, data = study_1)
+
+# In the fourth model (m4), we explore the three-way interaction involving evaluator benevolent sexism, evaluator gender, and entrepreneur gender.
+m4 <- lm(viable_s ~ HS_s + sex*Condition*BS_s, data = study_1)
+```
+
+Now, let's use `stargazer` to create a side-by-side comparison of the four regression models. This makes it easier to see how each addition of variables and interactions changes our story about startup viability.
+
+```{r}
+# Stargazer to compare regression models
+stargazer::stargazer(m1, m2, m3, m4, # Chooses the models to display
+                     type = "text", # Outputs the table in text format
+                     intercept.bottom = FALSE, # Positions the intercept term at the top of the table for easier reference
+                     digits = 2, # Rounds the numerical values in the table to two decimal places for clarity.
+                    star.cutoffs = c(0.05, 0.01, 0.001)) # Sets the significance levels for the stars in the table (0.05, 0.01, 0.001).
+```
+
+In `m3` (our main model), the coefficient for `BS_s` is positive and statistically significant, indicating a positive effect of benevolent sexism on the perceived viability of men-led startups (the reference group in `Condition`). More specifically, a one standard deviation increase in benevolent sexism is associated with a 0.25 standard deviation increase in the perceived viability of male-led startups.
+
+The coefficient for the interaction term `Condition:BS_s` is negative and statistically significant, suggesting that the positive impact of benevolent sexism on perceived startup viability is reduced for women-led startups compared to male-led startups. More specifically, a one standard deviation increase in benevolent sexism is only associated with a 0.05 (0.25 + (-0.20) = 0.05) standard deviation increase in the perceived viability of women-led startup.
+
+Our next step is to run a simple slope analysis. To do this, we use the `sim_slopes()` function from the `interactions` package. This analysis helps us see not just if there's a relationship, but how strong and significant it is.
+
+```{r}
+sim_slopes(m3, # performs a simple slopes analysis for the interaction in model m3.
+           pred = BS_s, # Specifies benevolent sexism as the predictor variable.
+           modx = Condition, # Specifies entrepreneur gender as the moderating variable.
+           johnson_neyman = FALSE, # Disables the Johnson-Neyman technique, which is used for finding regions of significance.
+           digits = 3) # Rounds the output to 3 decimal places.
+```
+
+The results suggests that the positive relationship between evaluators' benevolent sexism and their perceptions of viability for men-led startups is statistically significant (*p* = 0.001). However, no significant relationship was found between benevolent sexism and viability perceptions for women-led startups (*p* = 0.485).
+
+It is also worth noting that when we added a three-way interaction in Model 4, this interaction was not statistically significant, indicating that these biases are similarly present among both men and women evaluators.
+
+## Visualizing the interaction effect
+
+Beyond numerical analysis, let's also graph these interactions to see how the effect of benevolent sexism on perceived startup viability changes with the entrepreneur's gender. To do this, we use the `interact_plot()` function from the `interactions` package.
+
+```{r}
+# Setting graph features 
+
+# Define labels for the categories in the interaction plot.
+labels_cond <- c("Men-led startup", "Women-led startup") # Labels for the entrepreneur gender condition
+labels_sex <- c("Men participants", "Women participants") # Labels for the evaluator gender
+
+# The theme_pubr function from ggpubr package is used to set a consistent theme for plots.
+theme_pubr <- ggpubr::theme_pubr(base_size = 12, # Sets the base font size to 12.
+                                 base_family = "Times New Roman", # Uses 'Times New Roman' as the font family.
+                                 border = FALSE, # Adjusts border and margin settings.
+                                 margin = TRUE, 
+                                 legend = c("top", "bottom", "left", "right", "none"), # Specifies legend placement options.
+                                 x.text.angle = 0)
+```
+
+```{r, fig.height=6, fig.width=5.5, echo=F}
+# plot interaction between BS and Condition 
+interact_plot(m3, 
+              pred = "BS_s",           # Specifies benevolent sexism as the predictor variable.
+              modx = "Condition",       # Specifies entrepreneur gender as the moderator.
+              modx.labels = labels_cond,# Applies custom labels for the entrepreneur gender categories.
+              legend.main = "",         # Omits the main title for the legend for simplicity.
+              line.thickness = 2,       # Sets the thickness of the lines in the plot.
+              vary.lty = F,             # Sets the line type to be consistent for all lines.
+              colors = c("black", "#bdbdbd") # Defines the colors for the lines representing different conditions.
+) + 
+  labs(x = "Benevolent sexism (standardized)", y = "Perceived startup viability (standardized)") + # Sets labels for x and y axes.
+  theme(legend.title = element_blank()) + # Removes the legend title.
+  scale_x_continuous(limits = c(-3, 3), breaks = c(-3, -2, -1, 0, 1, 2, 3)) + # Sets limits and breaks for the x-axis.
+  scale_y_continuous(limits = c(-3, 3), breaks = c(-3, -2, -1, 0, 1, 2, 3)) + # Sets limits and breaks for the y-axis.
+  ggpubr::theme_pubr(base_size = 16) + # Applies a ggpubr theme with a specified base font size.
+  theme(legend.text = element_text(size = 16),    # Customizes the legend text size.
+        axis.title = element_text(size = 16),     # Customizes the axis title size.
+        text = element_text(family = "Times New Roman")) # Sets the font family for the text.
+```
+
+Here we see how the slope of benevolent sexism's effect on viability perception is steeper for men-led startups. For women-led startups, it's much flatter, confirming our earlier findings.
+
+And even though the three-way interaction wasn't significant, let's take a look at what it looks like:
+
+```{r, fig.height=8, fig.width=14, echo=F}
+# Graphing the three-way interaction
+interactions::interact_plot(m4, 
+              pred = "BS_s", 
+              modx = "Condition", 
+              mod2 = "sex",
+              modx.labels = labels_cond,
+              mod2.labels = labels_sex,
+              legend.main = "",
+              line.thickness = 2, 
+              vary.lty = F,
+              colors = c("black", "#bdbdbd")
+              )  + 
+  labs(x = "Benevolent sexism (standardized)", y = "Perceived startup viability (standardized)") +
+  theme(legend.title = element_blank()) +
+  scale_x_continuous(limits = c(-3, 3), breaks = c(-3, -2, -1, 0, 1, 2, 3)) +
+  scale_y_continuous(limits = c(-3, 3), breaks = c(-3, -2, -1, 0, 1, 2, 3)) +
+  ggpubr::theme_pubr(base_size = 20) +
+  theme(legend.title = element_blank(), 
+        legend.position = "top",
+        legend.text = element_text(size=20),
+        axis.text = element_text(size=20), 
+        axis.title = element_text(size=20),
+        text = element_text(family = "Times New Roman"))
+```
+
+Although the three-way interaction was not statistically significant, we can see that the biased decisions are a bit more pronounced among men evaluators than among women evaluators. However, both men and women evaluators tend to give unfair advantages to men-led startups the more they endorse benevolent sexism.
+
+## Moderated Mediation Analysis
+
+Finally, we explore the indirect effect of evaluator benevolent Sexism and entrepreneur gender on funding decisions through perceived startup viability. To do this, we use Andrew Hayes' PROCESS macro to conduct a moderated mediation analysis (Model 7). Hayes has created a specific function to run these models in R, which can be downloaded from [his website](https://www.processmacro.org/download.html). After running the file process.r, we can use the `process()` function to execute our moderated mediation model. Here's how we set it up:
+
+- evaluator benevolent sexism (`BS_s`) as the independent variable (`X`)
+- funding allocations (`Invest`) as the dependent variable (`Y`)
+- perceived startup viability (`viable_s`) as the mediator
+- entrepreneur gender (`Condition`) as the moderator (`W`)
+- evaluator hostile sexism (`HS_s`) and gender (`sex`) as controls (`COV`)
+
+```{r}
+# Bringing in the process.r functions
+source("process.r")
+
+# run moderated mediation model 
+process (data = study_1, 
+         y = "Invest",          # Dependent variable: funding allocations.
+         x = "BS_s",              # Independent variable: benevolent sexism.
+         m = "viable_s",          # Mediator: perceived startup viability.
+         w = "Condition",       # Moderator: entrepreneur gender.
+         model = 7,             # Specifies the PROCESS model number (Model 7 for moderated mediation).
+         cov =  c("HS_s", "sex"), # Control variables: hostile sexism and evaluator gender.
+         center = 2,            # Centers the predictor variables.
+         moments = 1,           # Computes moments (means and variances) for the bootstrap distribution.
+         modelbt = 1,           # Specifies bootstrapping for the model.
+         boot = 10000,          # Number of bootstrap samples for computing confidence intervals.
+         seed = 911996)         # Seed for random number generation in bootstrapping.
+```
+
+*Conditional Indirect Effects (Moderated Mediation)*
+For men-led startups (Condition = 0), a one standard deviation increase in evaluator benevolent sexism is indirectly linked to an increase in funding by about 2811 dollars. This effect is statistically significant, as the confidence interval does not include 0. However, for women-led startups (Condition = 1), the increase in funding is only 547 dollars, and the confidence interval includes zero. This suggests that benevolent sexism does not translate into significant funding boosts for women-led startups like it does for men-led startups. 
+    
+*Index of Moderated Mediation* 
+The confidence interval for this index does not include 0, suggesting that the indirect effect of benevolent sexism on funding decisions through perceived viability is significantly different for men-led and women-led startups. The negative value ndicates that this indiret effect is weaker for women-led startups than men-led startups.
+
+
+# Automation for Studies 2 and 3
+
+To maintain consistency and enhance efficiency across our studies, let's create a function to automate the analysis for Studies 2 and 3. This function, called `automate_regression_analysis`, takes a dataset and standardizes key variables, performs regression modeling, and visualizes interactions. If the interaction term is statistically significant, it dives deeper with simple slope and moderated mediation analyses. All results are compiled into a list.
+
+```{r}
+# Defining the function
+
+automate_regression_analysis <- function(data) {
+  
+  # Standardizing specified variables
+  data <- data %>% mutate(across(c(BS, HS, viable), ~scale(.), .names = "{.col}_s"))
+  
+  # Running regression models
+  m1 <- lm(viable_s ~ HS_s + sex, data = data)
+  m2 <- lm(viable_s ~ HS_s + sex + Condition + BS_s, data = data)
+  m3 <- lm(viable_s ~ HS_s + sex + Condition*BS_s, data = data)
+  m4 <- lm(viable_s ~ HS_s + sex*Condition*BS_s, data = data)
+  
+  # Stargazer to compare regression models
+  regression_result <- stargazer::stargazer(m1, m2, m3, m4, type = "text", intercept.bottom = FALSE, digits = 2, star.cutoffs = c(0.05, 0.01, 0.001))
+  
+  # Interaction plot for m3 (two-way interaction)
+  interaction_plot_m3 <- interact_plot(m3, 
+                                       pred = "BS_s",           
+                                       modx = "Condition",       
+                                       modx.labels = labels_cond,
+                                       legend.main = "",         
+                                       line.thickness = 2,       
+                                       vary.lty = F,             
+                                       colors = c("black", "#bdbdbd")) + 
+    labs(x = "Benevolent sexism (standardized)", y = "Perceived startup viability (standardized)") +
+    theme(legend.title = element_blank()) + 
+    scale_x_continuous(limits = c(-3, 3), breaks = c(-3, -2, -1, 0, 1, 2, 3)) + 
+    scale_y_continuous(limits = c(-3, 3), breaks = c(-3, -2, -1, 0, 1, 2, 3)) + #
+    ggpubr::theme_pubr(base_size = 16) + 
+    theme(legend.text = element_text(size = 16),   
+          axis.title = element_text(size = 16),     
+          text = element_text(family = "Times New Roman"))
+  
+  # Interaction plot for m4 (three-way interaction) 
+  interaction_plot_m4 <- interact_plot(m4, 
+                                       pred = "BS_s", 
+                                       modx = "Condition", 
+                                       mod2 = "sex",
+                                       modx.labels = labels_cond,
+                                       mod2.labels = labels_sex,
+                                       legend.main = "",
+                                       line.thickness = 2, 
+                                       vary.lty = F,
+                                       colors = c("black", "#bdbdbd"))  + 
+    labs(x = "Benevolent sexism (standardized)", y = "Perceived startup viability (standardized)") +
+    theme(legend.title = element_blank()) +
+    scale_x_continuous(limits = c(-3, 3), breaks = c(-3, -2, -1, 0, 1, 2, 3)) +
+    scale_y_continuous(limits = c(-3, 3), breaks = c(-3, -2, -1, 0, 1, 2, 3)) +
+    ggpubr::theme_pubr(base_size = 20) +
+    theme(legend.title = element_blank(), 
+          legend.position = "top",
+          legend.text = element_text(size=20),
+          axis.text = element_text(size=20), 
+          axis.title = element_text(size=20),
+          text = element_text(family = "Times New Roman"))
+  
+  # Check if interaction in m3 is significant
+  m3_summary <- summary(m3)
+  interaction_effect_significant <- "Condition:BS_s" %in% rownames(m3_summary$coefficients) && m3_summary$coefficients["Condition:BS_s", "Pr(>|t|)"] < 0.05
+
+  # Initialize results
+  simple_slopes_result <- NULL
+  moderated_mediation_model <- NULL
+
+  # Conditional execution based on the significance of the interaction in m3
+  if (interaction_effect_significant) {
+    simple_slopes_result <- sim_slopes(m3, pred = "BS_s", modx = "Condition", johnson_neyman = FALSE, digits = 3)
+    
+    moderated_mediation_model <- capture.output(process(data = data, y = "Invest", x = "BS_s", m = "viable_s", w = "Condition", model = 7, cov = c("HS_s", "sex"), center = 2, moments = 1, modelbt = 1, boot = 10000, seed = 911996))
+  }
+  
+  # Return the results as a list
+  list(regression_result = regression_result,
+       simple_slopes_result = simple_slopes_result,
+       moderated_mediation_model = moderated_mediation_model,
+       interaction_plot_two_way = interaction_plot_m3,
+       interaction_plot_three_way = interaction_plot_m4)
+}
+
+```
+
+# Study 2
+
+We now apply our automated function to the Study 2 dataset. 
+```{r}
+# Applying the function to Study 2 data
+study_2_results <- automate_regression_analysis(study_2)
+```
+
+## Regression analyses
+
+First, we examine the regression outcomes to see how variables interact.
+
+```{r}
+# Displaying regression results from Study 2
+study_2_results$regression_result
+```
+
+In Study 2, the two-way interaction between benevolent sexism and entrepreneur gender isn't statistically significant. However, when we add evaluator gender to the mix, something interesting happens. That is, the interaction between benevolent sexism, entrepreneur gender, and evaluator gender is significant. To unpack these, we analyze benevolent sexism's interaction with entrepreneur gender for men and women evaluators separately. 
+
+```{r}
+# standardized continuous variable
+study_2 <- study_2 %>% mutate(across(c(BS, HS, viable), ~scale(.), .names = "{.col}_s"))
+
+# test the interaction between benevolent sexism and entrepreneur gender among men evaluators
+m3_men_evaluator <- lm(viable_s ~ HS_s + BS_s*Condition, data = study_2 %>% filter(sex == 0))
+
+# test the interaction between benevolent sexism and entrepreneur gender among women evaluators
+m3_women_evaluator <- lm(viable_s ~ HS_s + BS_s*Condition, data = study_2 %>% filter(sex == 1))
+
+stargazer::stargazer(m3_men_evaluator, m3_women_evaluator, type = "text", intercept.bottom = FALSE, digits = 2, star.cutoffs = c(0.05, 0.01, 0.001))
+```
+
+For male evaluators, we observe a pattern similar our findings from Study 1: benevolent sexism skews their perception of viability in favor of men-led startups. Specifically, a one standard deviation increase in benevolent sexism among male evaluators correlates with a 0.42 standard deviation rise in perceived viability for men-led startups. However, this effect diminishes for women-led startups, with only a 0.13 standard deviation increase.
+
+To quantify the significance of these relationships, let's turn to a simple slope analysis:
+```{r}
+# Simple slope analysis for men evaluators
+sim_slopes(m3_men_evaluator, pred = BS_s, modx = Condition, johnson_neyman = FALSE, digits = 3)
+```
+
+The analysis confirms a significant positive relationship between men evaluators' benevolent sexism and their perceptions of viability for men-led startups (*p* < 0.001), but not for women-led startups (*p* = 0.154).
+
+Among women evaluators, the interaction term `BS_s:Condition` is not significant. This suggests that in contrast to the men evaluators, the women evaluators in Study 2 evaluated men- and women-led startups similarly regardless of their endorsement of benevolent sexism. 
+
+## Visualizing the interaction effect
+
+Let's take a look at the graph for these interactions. 
+
+```{r, fig.height=6, fig.width=5.5, echo=F}
+# Displaying two-way interaction plot for Study 2
+study_2_results$interaction_plot_two_way
+```
+
+```{r, fig.height=8, fig.width=14, echo=F}
+# Displaying three-way interaction plot for Study 2
+study_2_results$interaction_plot_three_way
+```
+
+
+## Moderated Mediation Analysis
+
+Given the significant interaction observed among men evaluators, let's also run a moderated mediation model to test the indirect effect of their benevolent sexism on funding allocations via perceived startup viability.
+
+```{r}
+process (data = study_2 %>% filter(sex == 0), # select men evaluators as the dataset
+         y = "Invest",                        # Dependent variable: funding allocations.
+         x = "BS_s",                          # Independent variable: benevolent sexism.
+         m = "viable_s",                      # Mediator: perceived startup viability.
+         w = "Condition",                     # Moderator: entrepreneur gender.
+         model = 7,                           # Specifies the PROCESS model number (Model 7 for moderated mediation).
+         cov =  c("HS_s"),                    # Control variables: hostile sexism.
+         center = 2,                          # Centers the predictor variables.
+         moments = 1,                         # Computes moments (means and variances) for the bootstrap distribution.
+         modelbt = 1,                         # Specifies bootstrapping for the model.
+         boot = 10000,                        # Number of bootstrap samples for computing confidence intervals.
+         seed = 911996)                       # Sets seed for reproducibility
+```
+
+*Conditional Indirect Effects (Moderated Mediation)*
+For men-led startups, a one standard deviation increase in men evaluators' benevolent sexism is indirectly linked to an increase in funding by about 5820 dollars. This effect is statistically significant, as the confidence interval does not include 0. However, for women-led startups, the increase in funding is only 1757 dollars, and the confidence interval includes zero. This suggests this indirect relationship is not significant for women-led startups.
+    
+*Index of Moderated Mediation* 
+The confidence interval for this index does not include 0, suggesting that the indirect effect of benevolent sexism is significantly different for men-led and women-led startups. The negative value points to a weaker indirect effect for women-led startups than men-led startups. 
+
+# Study 3
+
+As we proceed to Study 3, we apply the function to Study 3 dataset. 
+
+```{r}
+# Applying the automated function to Study 3 data
+study_3_results <- automate_regression_analysis(study_3)
+```
+
+## Regression analyses
+
+First, we examine the regression outcomes. 
+
+```{r}
+# Displaying regression results from Study 3
+study_3_results$regression_result
+```
+
+In study 3, we observe similar patterns as study 1: the interaction between benevolent sexism and entrepreneur gender is significant, with a one standard deviation increase in benevolent sexism correlating with a 0.29 standard deviation rise in perceived viability for men-led startups. This effect is much less pronounced for women-led startups, with a mere 0.06 standard deviation increase.
+
+Unlike Study 2, the three-way interaction involving evaluator gender is not significant, mirroring the trends seen in Study 1.
+
+Next, we assess the strength of benevolent sexism's effects across entrepreneur genders through simple slope analysis:
+
+```{r}
+study_3_results$simple_slopes_result
+```
+The results shows a statistically significant positive effect of benevolent sexism on perceived viability for men-led startups (*p* = 0.001), while this effect is not significant for women-led startups (*p* = 0.441).
+
+## Visualizing the interaction effect
+
+Let's take a look at the graph for the two-way interaction. 
+
+```{r, fig.height=6, fig.width=5.5, echo=F}
+# Displaying two-way interaction plot for Study 3
+study_3_results$interaction_plot_two_way
+```
+
+Though not statistically significant, let's also take a look at the three-way interaction graph.
+
+```{r, fig.height=8, fig.width=14, echo=F}
+# Displaying three-way interaction plot for Study 3
+study_3_results$interaction_plot_three_way
+```
+## Moderated Mediation Analysis
+
+Lastly, we assess the indirect influence of benevolent sexism on funding decisions via perceived startup viability.
+
+```{r}
+study_3_results$moderated_mediation_model
+```
+
+Once again, the indirect effect of benevolent sexism through perceived startup viability is significant for men-led startups (with the confidence interval excluding 0). Specifically, a one standard deviation increase in benevolent sexism is indirectly related to an increase by 3867 dollars in funding amount for men-led startups. For women-led startups, however, the boost in funding is only 844 dollars, and is not statistically significant (with the confidence interval including 0). 
+
+However, the index of moderated mediation is not significantly, as the confidence interval includes 0. This suggests that the indirect effects of benevolent sexism on funding allocation do not differ significantly between men- and women-led startups. 
+
+
+# Conclusion
+
+In the analyses above, we explore how evaluator benevolent sexism differentially impacts their perceptions of startup viability depending on the gender of the startup founder. To do this, we perform regression modeling, simple slope analysis, moderated mediation modeling, and visualization of the two- and three-way interactions. The results reveal a clear pattern: higher benevolent sexism correlates with higher evaluations of men-led startups, while it is unrelated to evaluations of women-led startups. These findings underscore the subtle yet powerful role of benevolent sexism in perpetuating gender disparities in entrepreneurship, not through directly undermining women, but by conferring unfair advantages to men while leaving women's outcomes unchanged. 

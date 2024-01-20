@@ -1,6 +1,11 @@
 ---
 title: "Descriptive Statistics and Correlation Analysis"
-format: html
+author: Julie Nguyen
+format:
+  html:
+    toc: true
+    toc-location: left
+    embed-resources: true
 editor: visual
 execute:
   cache: true
@@ -8,20 +13,18 @@ execute:
 
 # Overview
 
-This document details the code and methodology used in the "Benevolent Sexism and the Gender Gap in Startup Evaluation" project. Here, we explore how benevolent sexism affects evaluations of startups. Key variables include:
+This documents presents the code and methodology used for generating descriptive statistics and correlation analysis in our ["Benevolent Sexism and the Gender Gap in Startup Evaluation" study](https://journals.sagepub.com/doi/10.1177/10422587231178865) published in 2023 in the journal Entrepreneurship: Theory and Practice.  Our investigation centers around whether evaluators' attitudes of benevolent sexism impact their assessments of startup viability, depending on the founder's gender. To find out, we set up three experimental studies where we randomly assigned participants to evaluate startups led either by men or women, while also measuring their endorsement of benevolent sexism.  
 
-- Entrepreneur gender (`Condition`) coded as 0 = men entrepreneur and 1 = women entrepreneur.
-- Participant gender (`sex`) coded as 0 = men participants and 1 = women participants.
-- Participant benevolent sexism (`BS`) measured on a scale ranging from 1 to 6.
-- Participant hostile sexism (`HS`) measured on a scale ranging from 1 to 6.
-- Participant perceptions of startup viability (`viable`) measured on a scale ranging from 1 to 7.
-- Participant funding allocations (`Invest`) measured on a scale ranging from 0 to 100000
+Key variables include:
 
-This analysis is divided into two parts:
+-   Entrepreneur gender (`Condition`) coded as 0 = men entrepreneur and 1 = women entrepreneur.
+-   Participant gender (`sex`) coded as 0 = men participants and 1 = women participants.
+-   Participant benevolent sexism (`BS`) measured on a 1-6 scale.
+-   Participant hostile sexism (`HS`) measured on a 1-6 scale.
+-   Participant perceptions of startup viability (`viable`) measured on a 1-7 scale.
+-   Participant funding allocations (`Invest`) ranging from 0 to 100000 dollars.
 
--   Descriptive and Correlation Analysis for Study 1: We start by calculating means and standard deviations for the key variables. We then conduct correlation analyses to delve into the linear relationship between them.
--   Automated Analysis for Studies 2 and 3: To maintain consistency and enhance efficiency, the second section automates the procedures above for Studies 2 and 3.
-
+We start by calculating descriptive statistics for key variables and exploring their interrelationships with correlation analyses in Study 1. To streamline our approach, we automate these analyses for Studies 2 and 3.
 
 # Analysis for Study 1
 
@@ -78,7 +81,6 @@ study_1 %>%
 ```
 
 Now we calculate descriptive statistics for each condition.
-
 
 ```{r}
 # The 'Condition' column in 'study_1' is recoded to make the categories more descriptive.
@@ -144,9 +146,9 @@ study_1 %>%
 
 ## Function for Descriptive Statistics and Correlation
 
-Next, we create a function, called `generate_study_analysis()`, to automate the steps applied above to Studies 2 and 3. This ensures consistency and efficiency in our analysis across multiple studies. 
+Next, we create a function, called `generate_study_analysis()`, to automate the steps applied above to Studies 2 and 3. This ensures consistency and efficiency in our analysis across multiple studies.
 
-The function accepts three parameters: `data` (the dataset), `condition_var` (the variable denoting the experimental condition), and `key_vars` (a vector of the key variables under study). This function computes both overall and condition-specific descriptive statistics, followed by the calculation of a correlation matrix and partial correlations. All results are returned as a list. 
+The function accepts three parameters: `data` (the dataset), `condition_var` (the variable denoting the experimental condition), and `key_vars` (a vector of the key variables under study). This function computes both overall and condition-specific descriptive statistics, followed by the calculation of a correlation matrix and partial correlations. All results are returned as a list.
 
 ```{r}
 # Define the function
@@ -213,6 +215,7 @@ generate_study_analysis <- function(data, condition_var, key_vars) {
 ## Applying the Function to Study 2
 
 We then apply this function to the dataset for Study 2.
+
 ```{r}
 # Applying the function to Study 2 data
 results_study_2 <- generate_study_analysis(data = study_2, condition_var = "Condition", key_vars = c("sex", "BS", "HS", "viable", "Invest"))
@@ -231,9 +234,10 @@ results_study_2$PartialCorrelationsBS
 results_study_2$PartialCorrelationsHS
 ```
 
-## Applying the Function to Study 3 
+## Applying the Function to Study 3
 
-Finally, we apply the function to the dataset for Study 3. 
+Finally, we apply the function to the dataset for Study 3.
+
 ```{r}
 # Applying the function to Study 3 data
 results_study_3 <- generate_study_analysis(data = study_3, condition_var = "Condition", key_vars = c("sex", "BS", "HS", "viable", "Invest"))
@@ -252,6 +256,6 @@ results_study_3$PartialCorrelationsBS
 results_study_3$PartialCorrelationsHS
 ```
 
-# Summary 
+# Summary
 
-In the analyses above, we calculate means and standard deviations for our key variables and analyze the correlations between them. They set the stage for subsequent regression analyses examining the interaction between benevolent sexism and entrepreneur gender in predicting perceptions of startup viability.
+In our analyses, we've computed means and standard deviations for our key variables  and analyze the correlations between them. These analyses set the stage for subsequent more complex regression analyses, where we examine the interaction between benevolent sexism and entrepreneur gender in shaping perceptions of startup viability.
