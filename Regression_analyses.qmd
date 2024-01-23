@@ -13,7 +13,7 @@ execute:
 
 # Overview
 
-This documents presents the statistical analyses from our ["Benevolent Sexism and the Gender Gap in Startup Evaluation" study](https://journals.sagepub.com/doi/10.1177/10422587231178865) published in 2023 in the journal Entrepreneurship: Theory and Practice. We wanted to know whether startup evaluators' benevolent sexist attitudes impacts how viable they believe startups are, depending on the gender of the founder. To find out, we set up three experimental studies where we randomly assigned participants to evaluate startups led either by men or women, while also measuring their endorsement of benevolent sexism.  
+This documents presents the statistical analyses from our ["Benevolent Sexism and the Gender Gap in Startup Evaluation" study](https://journals.sagepub.com/doi/10.1177/10422587231178865) published in 2023 in the journal Entrepreneurship: Theory and Practice. We wanted to know whether startup evaluators' benevolent sexist attitudes impacts how viable they believe startups are, depending on the gender of the founder. To find out, we set up three experimental studies where we randomly assigned participants to evaluate startups led either by men or women, while also measuring their endorsement of benevolent sexism.
 
 **Key variables**
 
@@ -23,7 +23,7 @@ This documents presents the statistical analyses from our ["Benevolent Sexism an
 -   Evaluator hostile sexism (`HS_c`): measured on a 1-6 scale.
 -   Evaluator perceptions of startup viability (`viable`): measured on a 1-7 scale.
 -   Evaluator funding allocations (`Invest`): ranging from 0 to 100,000 dollars.
-    
+
 **Main analysis**
 
 Our main analysis examines the two-way interaction between evaluators' benevolent sexism and the gender of the entrepreneur. This will tell us whether the gender of a startup's founder influences how an evaluator's benevolent sexist attitudes affect their judgment of the startup's potential.
@@ -34,7 +34,7 @@ We also conduct some exploratory analyses:
 
 -   A three-way interaction between evaluator benevolent sexism, entrepreneur gender, and evaluator gender. This analysis sheds light on if men and women evaluators behave differently based on their benevolent sexist attitudes.
 -   A moderated mediation model examining how benevolent sexism and entrepreneur gender indirectly affect funding decisions through influencing perceptions of startup viability. This model helps us understand a potential pathway through which evaluator benevolent sexism might translate into financial outcomes for startups.
-    
+
 We start by performing these analyses for study 1. Then, to maintain consistency and enhance efficiency, we write a function to automate these analyses for Studies 2 and 3.
 
 # Data Loading and Preprocessing
@@ -204,11 +204,11 @@ Although the three-way interaction was not statistically significant, we can see
 
 Finally, we explore the indirect effect of evaluator benevolent Sexism and entrepreneur gender on funding decisions through perceived startup viability. To do this, we use Andrew Hayes' PROCESS macro to conduct a moderated mediation analysis (Model 7). Hayes has created a specific function to run these models in R, which can be downloaded from [his website](https://www.processmacro.org/download.html). After running the file process.r, we can use the `process()` function to execute our moderated mediation model. Here's how we set it up:
 
-- evaluator benevolent sexism (`BS_s`) as the independent variable (`X`)
-- funding allocations (`Invest`) as the dependent variable (`Y`)
-- perceived startup viability (`viable_s`) as the mediator
-- entrepreneur gender (`Condition`) as the moderator (`W`)
-- evaluator hostile sexism (`HS_s`) and gender (`sex`) as controls (`COV`)
+-   evaluator benevolent sexism (`BS_s`) as the independent variable (`X`)
+-   funding allocations (`Invest`) as the dependent variable (`Y`)
+-   perceived startup viability (`viable_s`) as the mediator
+-   entrepreneur gender (`Condition`) as the moderator (`W`)
+-   evaluator hostile sexism (`HS_s`) and gender (`sex`) as controls (`COV`)
 
 ```{r}
 # Bringing in the process.r functions
@@ -229,12 +229,9 @@ process (data = study_1,
          seed = 911996)         # Seed for random number generation in bootstrapping.
 ```
 
-*Conditional Indirect Effects (Moderated Mediation)*
-For men-led startups (Condition = 0), a one standard deviation increase in evaluator benevolent sexism is indirectly linked to an increase in funding by about 2811 dollars. This effect is statistically significant, as the confidence interval does not include 0. However, for women-led startups (Condition = 1), the increase in funding is only 547 dollars, and the confidence interval includes zero. This suggests that benevolent sexism does not translate into significant funding boosts for women-led startups like it does for men-led startups. 
-    
-*Index of Moderated Mediation* 
-The confidence interval for this index does not include 0, suggesting that the indirect effect of benevolent sexism on funding decisions through perceived viability is significantly different for men-led and women-led startups. The negative value ndicates that this indiret effect is weaker for women-led startups than men-led startups.
+*Conditional Indirect Effects (Moderated Mediation)* For men-led startups (Condition = 0), a one standard deviation increase in evaluator benevolent sexism is indirectly linked to an increase in funding by about 2811 dollars. This effect is statistically significant, as the confidence interval does not include 0. However, for women-led startups (Condition = 1), the increase in funding is only 547 dollars, and the confidence interval includes zero. This suggests that benevolent sexism does not translate into significant funding boosts for women-led startups like it does for men-led startups.
 
+*Index of Moderated Mediation* The confidence interval for this index does not include 0, suggesting that the indirect effect of benevolent sexism on funding decisions through perceived viability is significantly different for men-led and women-led startups. The negative value ndicates that this indiret effect is weaker for women-led startups than men-led startups.
 
 # Automation for Studies 2 and 3
 
@@ -325,7 +322,8 @@ automate_regression_analysis <- function(data) {
 
 # Study 2
 
-We now apply our automated function to the Study 2 dataset. 
+We now apply our automated function to the Study 2 dataset.
+
 ```{r}
 # Applying the function to Study 2 data
 study_2_results <- automate_regression_analysis(study_2)
@@ -340,7 +338,7 @@ First, we examine the regression outcomes to see how variables interact.
 study_2_results$regression_result
 ```
 
-In Study 2, the two-way interaction between benevolent sexism and entrepreneur gender isn't statistically significant. However, when we add evaluator gender to the mix, something interesting happens. That is, the interaction between benevolent sexism, entrepreneur gender, and evaluator gender is significant. To unpack these, we analyze benevolent sexism's interaction with entrepreneur gender for men and women evaluators separately. 
+In Study 2, the two-way interaction between benevolent sexism and entrepreneur gender isn't statistically significant. However, when we add evaluator gender to the mix, something interesting happens. That is, the interaction between benevolent sexism, entrepreneur gender, and evaluator gender is significant. To unpack these, we analyze benevolent sexism's interaction with entrepreneur gender for men and women evaluators separately.
 
 ```{r}
 # standardized continuous variable
@@ -358,18 +356,19 @@ stargazer::stargazer(m3_men_evaluator, m3_women_evaluator, type = "text", interc
 For male evaluators, we observe a pattern similar our findings from Study 1: benevolent sexism skews their perception of viability in favor of men-led startups. Specifically, a one standard deviation increase in benevolent sexism among male evaluators correlates with a 0.42 standard deviation rise in perceived viability for men-led startups. However, this effect diminishes for women-led startups, with only a 0.13 standard deviation increase.
 
 To quantify the significance of these relationships, let's turn to a simple slope analysis:
+
 ```{r}
 # Simple slope analysis for men evaluators
 sim_slopes(m3_men_evaluator, pred = BS_s, modx = Condition, johnson_neyman = FALSE, digits = 3)
 ```
 
-The analysis confirms a significant positive relationship between men evaluators' benevolent sexism and their perceptions of viability for men-led startups (*p* < 0.001), but not for women-led startups (*p* = 0.154).
+The analysis confirms a significant positive relationship between men evaluators' benevolent sexism and their perceptions of viability for men-led startups (*p* \< 0.001), but not for women-led startups (*p* = 0.154).
 
-Among women evaluators, the interaction term `BS_s:Condition` is not significant. This suggests that in contrast to the men evaluators, the women evaluators in Study 2 evaluated men- and women-led startups similarly regardless of their endorsement of benevolent sexism. 
+Among women evaluators, the interaction term `BS_s:Condition` is not significant. This suggests that in contrast to the men evaluators, the women evaluators in Study 2 evaluated men- and women-led startups similarly regardless of their endorsement of benevolent sexism.
 
 ## Visualizing the interaction effect
 
-Let's take a look at the graph for these interactions. 
+Let's take a look at the graph for these interactions.
 
 ```{r, fig.height=6, fig.width=5.5, echo=F}
 # Displaying two-way interaction plot for Study 2
@@ -380,7 +379,6 @@ study_2_results$interaction_plot_two_way
 # Displaying three-way interaction plot for Study 2
 study_2_results$interaction_plot_three_way
 ```
-
 
 ## Moderated Mediation Analysis
 
@@ -401,15 +399,13 @@ process (data = study_2 %>% filter(sex == 0), # select men evaluators as the dat
          seed = 911996)                       # Sets seed for reproducibility
 ```
 
-*Conditional Indirect Effects (Moderated Mediation)*
-For men-led startups, a one standard deviation increase in men evaluators' benevolent sexism is indirectly linked to an increase in funding by about 5820 dollars. This effect is statistically significant, as the confidence interval does not include 0. However, for women-led startups, the increase in funding is only 1757 dollars, and the confidence interval includes zero. This suggests this indirect relationship is not significant for women-led startups.
-    
-*Index of Moderated Mediation* 
-The confidence interval for this index does not include 0, suggesting that the indirect effect of benevolent sexism is significantly different for men-led and women-led startups. The negative value points to a weaker indirect effect for women-led startups than men-led startups. 
+*Conditional Indirect Effects (Moderated Mediation)* For men-led startups, a one standard deviation increase in men evaluators' benevolent sexism is indirectly linked to an increase in funding by about 5820 dollars. This effect is statistically significant, as the confidence interval does not include 0. However, for women-led startups, the increase in funding is only 1757 dollars, and the confidence interval includes zero. This suggests this indirect relationship is not significant for women-led startups.
+
+*Index of Moderated Mediation* The confidence interval for this index does not include 0, suggesting that the indirect effect of benevolent sexism is significantly different for men-led and women-led startups. The negative value points to a weaker indirect effect for women-led startups than men-led startups.
 
 # Study 3
 
-As we proceed to Study 3, we apply the function to Study 3 dataset. 
+As we proceed to Study 3, we apply the function to Study 3 dataset.
 
 ```{r}
 # Applying the automated function to Study 3 data
@@ -418,7 +414,7 @@ study_3_results <- automate_regression_analysis(study_3)
 
 ## Regression analyses
 
-First, we examine the regression outcomes. 
+First, we examine the regression outcomes.
 
 ```{r}
 # Displaying regression results from Study 3
@@ -434,11 +430,12 @@ Next, we assess the strength of benevolent sexism's effects across entrepreneur 
 ```{r}
 study_3_results$simple_slopes_result
 ```
+
 The results shows a statistically significant positive effect of benevolent sexism on perceived viability for men-led startups (*p* = 0.001), while this effect is not significant for women-led startups (*p* = 0.441).
 
 ## Visualizing the interaction effect
 
-Let's take a look at the graph for the two-way interaction. 
+Let's take a look at the graph for the two-way interaction.
 
 ```{r, fig.height=6, fig.width=5.5, echo=F}
 # Displaying two-way interaction plot for Study 3
@@ -451,6 +448,7 @@ Though not statistically significant, let's also take a look at the three-way in
 # Displaying three-way interaction plot for Study 3
 study_3_results$interaction_plot_three_way
 ```
+
 ## Moderated Mediation Analysis
 
 Lastly, we assess the indirect influence of benevolent sexism on funding decisions via perceived startup viability.
@@ -459,11 +457,10 @@ Lastly, we assess the indirect influence of benevolent sexism on funding decisio
 study_3_results$moderated_mediation_model
 ```
 
-Once again, the indirect effect of benevolent sexism through perceived startup viability is significant for men-led startups (with the confidence interval excluding 0). Specifically, a one standard deviation increase in benevolent sexism is indirectly related to an increase by 3867 dollars in funding amount for men-led startups. For women-led startups, however, the boost in funding is only 844 dollars, and is not statistically significant (with the confidence interval including 0). 
+Once again, the indirect effect of benevolent sexism through perceived startup viability is significant for men-led startups (with the confidence interval excluding 0). Specifically, a one standard deviation increase in benevolent sexism is indirectly related to an increase by 3867 dollars in funding amount for men-led startups. For women-led startups, however, the boost in funding is only 844 dollars, and is not statistically significant (with the confidence interval including 0).
 
-However, the index of moderated mediation is not significantly, as the confidence interval includes 0. This suggests that the indirect effects of benevolent sexism on funding allocation do not differ significantly between men- and women-led startups. 
-
+However, the index of moderated mediation is not significantly, as the confidence interval includes 0. This suggests that the indirect effects of benevolent sexism on funding allocation do not differ significantly between men- and women-led startups.
 
 # Conclusion
 
-In the analyses above, we explore how evaluator benevolent sexism differentially impacts their perceptions of startup viability depending on the gender of the startup founder. To do this, we perform regression modeling, simple slope analysis, moderated mediation modeling, and visualization of the two- and three-way interactions. The results reveal a clear pattern: higher benevolent sexism correlates with higher evaluations of men-led startups, while it is unrelated to evaluations of women-led startups. These findings underscore the subtle yet powerful role of benevolent sexism in perpetuating gender disparities in entrepreneurship, not through directly undermining women, but by conferring unfair advantages to men while leaving women's outcomes unchanged. 
+In the analyses above, we explore how evaluator benevolent sexism differentially impacts their perceptions of startup viability depending on the gender of the startup founder. To do this, we perform regression modeling, simple slope analysis, moderated mediation modeling, and visualization of the two- and three-way interactions. The results reveal a clear pattern: higher benevolent sexism correlates with higher evaluations of men-led startups, while it is unrelated to evaluations of women-led startups. These findings underscore the subtle yet powerful role of benevolent sexism in perpetuating gender disparities in entrepreneurship, not through directly undermining women, but by conferring unfair advantages to men while leaving women's outcomes unchanged.
