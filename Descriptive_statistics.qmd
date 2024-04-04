@@ -1,5 +1,5 @@
 ---
-title: "Descriptive Statistics and Correlation Analysis"
+title: "Descriptive statistics: getting to know our data"
 author: Julie Nguyen
 format:
   html:
@@ -11,24 +11,22 @@ execute:
   cache: true
 ---
 
-# Overview
+In this notebook, we presents the analysis behind our research, "Benevolent Sexism and the Gender Gap in Startup Evaluation," featured in [Entrepreneurship: Theory and Practice](https://journals.sagepub.com/doi/10.1177/10422587231178865) and [The Conversation Canada](https://theconversation.com/benevolent-sexism-in-startups-widens-the-gender-gap-by-advantaging-men-over-women-222486). Our study explores into how evaluators' benevolent sexism might influence their assessment of startups, contingent on the founder's gender.
 
-This documents presents the code and methodology used for generating descriptive statistics and correlation analysis in our ["Benevolent Sexism and the Gender Gap in Startup Evaluation" study](https://journals.sagepub.com/doi/10.1177/10422587231178865) published in 2023 in the journal Entrepreneurship: Theory and Practice.  Our investigation centers around whether evaluators' attitudes of benevolent sexism impact their assessments of startup viability, depending on the founder's gender. To find out, we set up three experimental studies where we randomly assigned participants to evaluate startups led either by men or women, while also measuring their endorsement of benevolent sexism.  
+At the heart of our investigation lies a critical question: Does benevolent sexism skew evaluators' views on the viability of startups led by men versus women? To dissect this, we orchestrated three experimental studies. Participants were subtly assigned to evaluate startups headed by either gender, while we separately measured their levels of benevolent and hostile sexism.
 
-Key variables include:
+**Key variables include:**
 
--   Entrepreneur gender (`Condition`) coded as 0 = men entrepreneur and 1 = women entrepreneur.
--   Participant gender (`sex`) coded as 0 = men participants and 1 = women participants.
--   Participant benevolent sexism (`BS`) measured on a 1-6 scale.
--   Participant hostile sexism (`HS`) measured on a 1-6 scale.
--   Participant perceptions of startup viability (`viable`) measured on a 1-7 scale.
--   Participant funding allocations (`Invest`) ranging from 0 to 100000 dollars.
+-   Entrepreneur gender (`Condition`) coded 0 for men and 1 for women entrepreneurs.
+-   Participant gender (`sex`) indicates the evaluator's gender, with 0 for men and 1 for women.
+-   Participant benevolent sexism (`BS`) and hostile sexism (`HS`) rated on a scale of 1-6, reflecting participants' endorsement of different forms of sexism
+-   Participant perceptions of startup viability (`viable`) assessed on a scale of 1-7, reflecting participants' views on the startup's potential success.
+-   Participant funding allocations (`Invest`) captures the financial commitment participants are willing to make, ranging from 0 to 100,000.
 
-We start by calculating descriptive statistics for key variables and exploring their interrelationships with correlation analyses in Study 1. To streamline our approach, we automate these analyses for Studies 2 and 3.
+**Navigating the analysis:**
 
-# Analysis for Study 1
+We kick-started our analytical journey with Study 1 and then automate the process across three studies. Specifically, we calculated descriptive statistics for key variables for the whole sample and separately for each experimental condition and each participant gender group. We then visualize sample sizes to assess participant distribution, create histograms to understand variable distributions, comparing means and standard deviations across groups via bar charts, and testing these group differences through t-tests. In doing so, we gain an understanding the basic structure and distribution of our data, setting the stage for more complex regression analyses later on.
 
-## Data Loading and Preprocessing
 
 ```{r setup}
 knitr::opts_chunk$set(message = FALSE, warning = FALSE)
@@ -36,56 +34,107 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 
 ```{r}
 # Load the necessary libraries
-library(tidyverse)
-library(Hmisc)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(purrr)
 library(psych)
 library(kableExtra)
+library(stringr)
+library(broom)
+library(patchwork)
+library(cowplot)
 
-# Load the data for Study 1
+# Load the data for three studies 
 study_1 <- readRDS("/Users/mac/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 1/Data/R data/study_1.rds")
 study_2 <- readRDS("~/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 2/Data/R data/study_2.rds")
 study_3 <- readRDS("~/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 3/Data/R data/study_3.rds")
 
 ```
 
-## Descriptive Statistics
 
-In this section, we calculate means and standard deviations of the key variables for the whole sample, using the `summarise()` function from the `dplyr` package.
+## Kicking off with study 1
+
+Welcome to the beginning of our exploration! 🌟 In this segment, we dive into the Study 1 dataset to uncover insights through descriptive statistics of key variables. 
+
+### Understanding the participants
+
+Let's first take a glimpse at our data:
 
 ```{r}
-# Summarize the data in 'study_1' and calculate the mean and standard deviation for our variables (sex, BS, HS, viable, Invest)
+# Initial glimpse at the dataset to check the first few entries. This helps in getting a basic understanding of data structure and types of variables collected in the study.
+study_1 %>% select(id, Condition, BS, HS, sex, viable, Invest) %>% head() %>% kable()
+```
+
+This table shows a snapshot of our dataset. Each row is a unique participant, with columns detailing their characteristics: their ID (`id`), the experimental scenario they were assigned (`Condition`), how much they agreed with benevolent sexist (`BS`) and hostile sexist beliefs (`HS`), their gender (`sex`), how viable they thought the startup was (`viable`), and how much they were willing to support it (`Invest`).
+
+Now, let's calculate mean and standard deviation across key variables.
+
+```{r, warning=FALSE}
+# Calculating mean and standard deviation for key variables (BS, HS, viable, Invest) to get an overview of central tendencies and variability. `na.rm = TRUE` ensures missing values are ignored in these calculations.
 overall_stats <- study_1 %>% 
   summarise(
     across(
-      c(sex, BS, HS, viable, Invest), 
+      c(BS, HS, viable, Invest), 
       list(mean = mean, sd = sd), 
-      na.rm = TRUE
-    )
-  ) %>% 
-  # After calculating the summary statistics, we add a new column named 'Condition'.
-  # This column is filled with the value 'Overall' to indicate that these statistics are for the entire dataset.
-  mutate(Condition = "Overall")
+      na.rm = TRUE))
+
+overall_stats %>% kable()
 ```
 
-Next, we break down the dataset based on the experimental condition - whether the startup was led by men or women. First, let's see how many observations we have in each condition.
+It looks like our participants agree with benevolent sexism more than hostile sexism. No big surprise there—society often dresses up these attitudes as chivalry instead of prejudice. Our participants are also quite optimistic about the startup's potential, scoring its viability pretty high (4.7 out of 7). However, they're a tad more cautious when it comes to actually investing, with investment amount averaging at 37K out of 100K. A classic case of "let's see where this goes".
+
+Let’s visualize the distribution of these variables to better grasp how our participants' opinions spread out. For this, we'll use histograms. 
 
 ```{r}
+# Setting up for visualization
+# Define key variables, their bin widths, and assigned colors for differentiation
+variables <- c("BS", "HS", "viable", "Invest") # `variables` are the key variables of interest
+binwidths <- c(0.5, 0.5, 0.5, 5000) # `binwidths` determine the granularity of the histogram
+colors <- c("#cf1578", "#e8d21d", "#039fbe", "#b20238") # `colors` are visually distinguishing each variable's histogram
+x_limits <- list(c(1, 6), c(1, 6), c(1, 7), c(0, 100000)) # Define x-axis limits based on expected data ranges
+
+# Generate histograms using map to iterate over the key variables and their corresponding attributes
+plots <- map(seq_along(variables), ~ {
+  var_plot <- ggplot(study_1, aes(x = .data[[variables[.x]]])) +
+    geom_histogram(binwidth = binwidths[.x], fill = colors[.x], color = NA) +  # No outline around bins
+    ggtitle(paste("Histogram of", variables[.x])) +
+    xlab(variables[.x]) +
+    ylab("Frequency") +
+    theme_minimal() +
+    scale_x_continuous(limits = x_limits[[.x]], oob = scales::oob_squish)  # Adjust x-axis based on variable
+})
+
+# Assembling histograms into a cohesive visual layout for side-by-side comparison.
+(plots[[1]] + plots[[2]]) / (plots[[3]] + plots[[4]])
+
+```
+Benevolent sexism, hostile sexism, and perceived viability scores generally follow a normal distribution, indicating a relatively even spread of opinions on these scales. Investment amounts, though, presents what looks like a multimodal distribution with varied peaks. This hints at distinct groups of participants based on their willingness to invest.
+
+
+### Zooming in on the experimental conditions
+
+Let's narrow down our focus and compare startups led by men versus those led by women. How many observations we have in each condition?
+
+```{r}
+# Counting the number of observations within each experimental condition to ensure sufficient data for each group.
+
 study_1 %>%
   mutate(Condition = case_when(
       Condition == 0 ~ "Men entrepreneur",
       Condition == 1 ~ "Women entrepreneur",
       TRUE ~ as.character(Condition)  
     )
-  ) %>%
-  { table(.$Condition) }  
+  ) %>% count(Condition)
 ```
 
-Now we calculate descriptive statistics for each condition.
+Looks like we have a balanced number of observations for each experimental condition. Nice! This is crucial for subsequent comparative analysis to be meaningful.
+
+Let's dig deeper and calculate means and standard deviations for each experimental condition. 
 
 ```{r}
-# The 'Condition' column in 'study_1' is recoded to make the categories more descriptive.
-# Specifically, a numeric value of 0 is recoded to 'Men entrepreneur' and 1 to 'Women entrepreneur'.
-# Any other values are kept as is but converted to a string type for consistency.
+# Calculate descriptive statistics by the experimental condition to discern potential differences.
+# The 'Condition' column in 'study_1' is recoded so that 0 is recoded to 'Men entrepreneur' and 1 to 'Women entrepreneur'.
 condition_stats <- study_1 %>%
   mutate(
     Condition = case_when(
@@ -99,163 +148,466 @@ condition_stats <- study_1 %>%
   group_by(Condition) %>%
   summarise(
     across(
-      c(sex, BS, HS, viable, Invest), 
+      c(BS, HS, viable, Invest), 
       list(mean = ~mean(., na.rm = TRUE), sd = ~sd(., na.rm = TRUE))
     )
   )
+
+condition_stats %>% kable()
 ```
 
-For easier comparison, we use `bind_rows()` to combine the overall and condition-specific statistics into one dataframe.
+Let's break down these stats visually. It's always a bit easier to spot patterns and contrasts with a graph rather than a table:
 
 ```{r}
-# Combine the overall statistics with the by-condition statistics into a single dataframe.
-bind_rows(condition_stats, overall_stats) %>% mutate_if(is.numeric, round, 2) %>% kable()
+# Transforming condition stats for visualization. 
+# We pivot longer to have a single measure and stat type per row, then pivot wider to separate mean and sd for plotting. 
+condition_stats %>% 
+  pivot_longer(cols = ends_with("_mean") | ends_with("_sd"), # Select columns that end with '_mean' or '_sd'
+               names_to = "Metric_Type", # New column where original column names (indicating metric and stat type) are stored
+               values_to = "Value") %>% # New column where values from the selected columns are stored
+  separate(Metric_Type, into = c("Variable", "Stat"), sep = "_") %>% # Split 'Metric_Type' into 'Variable' and 'Stat' based on '_'
+  pivot_wider(names_from = Stat, values_from = Value) %>% # Pivot back to a wider format where 'mean' and 'sd' become separate columns
+  # Replace abbreviated variable names with full, descriptive names for clarity in visual representation
+  mutate(Variable = str_replace(Variable, "BS", "Benevolent Sexism"),
+         Variable = str_replace(Variable, "HS", "Hostile Sexism"),
+         Variable = str_replace(Variable, "viable", "Perceived Viability"),
+         Variable = str_replace(Variable, "Invest", "Investment Decisions")) %>% 
+  ggplot(aes(x = Condition, y = mean, fill = Condition)) + # Plotting setup: X-axis is Condition, Y-axis is mean, colored by Condition
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +  # Draw bars for mean values, dodge positions them side by side
+  geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd), position = position_dodge(width = 0.8), width = 0.25) + # Add error bars for SD
+  facet_wrap(~Variable, scales = "free_y", ncol = 2) +  # Separate plots for each variable, allowing Y-axis to scale independently
+  labs(x = "", y = "Mean with SD as error bars") + # Labeling axes
+  theme_minimal() + # Minimal theme for a clean look
+  scale_fill_manual(values = c("Men entrepreneur" = "#e8d21d", "Women entrepreneur" = "#039fbe")) + # Custom colors for conditions
+  theme(legend.position = "none")  # Remove legend for a cleaner look
 ```
 
-## Correlation Analyses
 
-Once we have the mean and sd of our key variables, let's run some correlation analyses to uncover any significant linear relationships between them. We begin by computing a correlation matrix, using the `rcorr()` function from the `Hmisc` package.
+Seems like there is no drastic differences in sexist attitudes between the conditions. That's good, it means our random assignment was successful in cancelling out group differences in sexism. There's a slight edge in favor of women's startups when it comes to investment. Let's conduct t-test to see if this difference are statistically significant.
 
 ```{r}
-# Calculate Pearson correlation between 'sex', 'BS', 'HS', 'viable', and 'Invest'.
-rcorr(as.matrix(
-    study_1 %>% select(sex, BS, HS, viable, Invest)), type = "pearson")
+# Specifying the variables to undergo statistical testing.
+variables_to_test <- c("BS", "HS", "viable", "Invest")
+
+# Setting scientific notation penalty to avoid scientific notation in output
+options(scipen = 999)
+
+# Running t-tests for each variable between conditions to check for statistically significant differences.
+# The reformulate function dynamically creates the formula needed for the t-test based on the variable name.
+map(variables_to_test, ~t.test(reformulate("Condition", response = .), data = study_1)) 
 ```
 
-We can also compute partial correlations to understand the relationship between two variables while controlling for the effect of another, using the `partial.r()` function from the `psych` package.
+And... it turns out, the differences we spotted don't pass the statistical significance test. So, the way our participants view and invest in these startups doesn't hinge on whether a man or a woman is at the helm. 
 
-First, we examine the relationship between Benevolent Sexism and our outcomes (startup viability and investment decisions), controlling for Hostile Sexism:
+### Zooming in on participant gender
 
-```{r}
-study_1 %>% 
-  select(BS, viable, Invest, HS) %>% 
-  psych::partial.r(c("BS", "viable", "Invest"),"HS") %>% # Calculate partial correlations between 'BS', 'viable', 'Invest' controlling for 'HS'.
-  psych::corr.p(n=nrow(study_1)) # Compute p-values for these partial correlations based on the sample size of study_1.
-```
-
-Similarly, we then explore the relationship between Hostile Sexism and our outcomes, this time controlling for Benevolent Sexism:
+Do men and women see things differently in our study? Let's find out:
 
 ```{r}
-study_1 %>% 
-  select(BS, viable, Invest, HS) %>% 
-  psych::partial.r(c("HS", "viable", "Invest"),"BS") %>% # Calculate partial correlations between 'HS', 'viable', 'Invest' controlling for 'BS'.
-  psych::corr.p(n=nrow(study_1)) # Compute p-values for these partial correlations based on the sample size.
-```
-
-# Automated Analysis for Studies 2 and 3
-
-## Function for Descriptive Statistics and Correlation
-
-Next, we create a function, called `generate_study_analysis()`, to automate the steps applied above to Studies 2 and 3. This ensures consistency and efficiency in our analysis across multiple studies.
-
-The function accepts three parameters: `data` (the dataset), `condition_var` (the variable denoting the experimental condition), and `key_vars` (a vector of the key variables under study). This function computes both overall and condition-specific descriptive statistics, followed by the calculation of a correlation matrix and partial correlations. All results are returned as a list.
-
-```{r}
-# Define the function
-
-generate_study_analysis <- function(data, condition_var, key_vars) {
-
-  # Ensure that key variables are in character format 
-  key_vars <- as.character(key_vars)
-
-  # Calculate number of participants in each condition
-  sample_size <- data %>%
-  mutate(Condition = case_when(
-      .[[condition_var]] == 0 ~ "Men entrepreneur",
-      .[[condition_var]] == 1 ~ "Women entrepreneur",
-      TRUE ~ as.character(.[[condition_var]])
-    )) %>%
-    { table(.$Condition) }  
-  
-  # Calculate overall descriptive statistics
-  overall_stats <- data %>%
-    summarise(across(all_of(key_vars), 
-                     list(mean = ~mean(., na.rm = TRUE), sd = ~sd(., na.rm = TRUE)))) %>%
-    mutate(Condition = "Overall")
-
-  # Recode the condition variable and calculate descriptive statistics by condition
-  condition_stats <- data %>%
-    mutate(Condition = case_when(
-      .[[condition_var]] == 0 ~ "Men entrepreneur",
-      .[[condition_var]] == 1 ~ "Women entrepreneur",
-      TRUE ~ as.character(.[[condition_var]])
-    )) %>%
-    group_by(Condition) %>%
-    summarise(across(all_of(key_vars), 
-                     list(mean = ~mean(., na.rm = TRUE), sd = ~sd(., na.rm = TRUE))))
-
-  # Combine overall and condition-specific statistics
-  combined_stats <- bind_rows(condition_stats, overall_stats) %>% mutate_if(is.numeric, round, 2) %>% kable()
-
-  # Calculate correlation matrix
-  correlation_matrix <- rcorr(as.matrix(data %>% select(all_of(key_vars))), type = "pearson")
-
-  # Calculate partial correlations
-  partial_correlations_BS <- data %>% 
-    select(all_of(c(key_vars, "HS"))) %>% 
-    psych::partial.r(c("BS", "viable", "Invest"), "HS") %>% 
-    psych::corr.p(n = nrow(data))
-
-  partial_correlations_HS <- data %>% 
-    select(all_of(c(key_vars, "BS"))) %>% 
-    psych::partial.r(c("HS", "viable", "Invest"), "BS") %>% 
-    psych::corr.p(n = nrow(data))
-
-  # Return a list of all results
-  list(
-    SampleSize = sample_size,
-    DescriptiveStats = combined_stats,
-    CorrelationMatrix = correlation_matrix,
-    PartialCorrelationsBS = partial_correlations_BS,
-    PartialCorrelationsHS = partial_correlations_HS
+# Calculate descriptive statistics by participant gender to discern potential differences.
+# The 'sex' column in 'study_1' is recoded so that 0 is recoded to 'Men participant' and 1 to 'Women participant'.
+participant_gender_stats <- study_1 %>%
+  mutate(
+    sex = case_when(
+      sex == 0 ~ "Men participant",
+      sex == 1 ~ "Women participant"
+    )) %>% 
+  filter(!is.na(sex)) %>% 
+  # Group the data by the newly updated 'sex' column.
+  # Within each group (each unique condition), calculate the mean and standard deviation for the same set of variables.
+  group_by(sex) %>%
+  summarise(
+    across(
+      c(BS, HS, viable, Invest), 
+      list(mean = ~mean(., na.rm = TRUE), sd = ~sd(., na.rm = TRUE))
+    )
   )
+
+participant_gender_stats %>% kable()
+```
+Let's graph these mean and sd values like we did before. 
+
+```{r}
+participant_gender_stats %>% 
+  pivot_longer(cols = ends_with("_mean") | ends_with("_sd"), 
+               names_to = "Metric_Type", 
+               values_to = "Value") %>% 
+  separate(Metric_Type, into = c("Variable", "Stat"), sep = "_") %>% 
+  pivot_wider(names_from = Stat, values_from = Value) %>% 
+  mutate(Variable = str_replace(Variable, "BS", "Benevolent Sexism"),
+         Variable = str_replace(Variable, "HS", "Hostile Sexism"),
+         Variable = str_replace(Variable, "viable", "Perceived Viability"),
+         Variable = str_replace(Variable, "Invest", "Investment Decisions")) %>% 
+  ggplot(aes(x = sex, y = mean, fill = sex)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
+  geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd), position = position_dodge(width = 0.8), width = 0.25) +
+  facet_wrap(~Variable, scales = "free_y", ncol = 2) +
+  labs(x = "", y = "Mean with SD as error bars") +
+  theme_minimal() +
+  scale_fill_manual(values = c("Men participant" = "#ecc19c", "Women participant" = "#1e847f")) +
+  theme(legend.position = "none")
+```
+
+
+Looks like the women in our study endorse benevolent and hostile sexism less than the men, although gender difference in benevolent sexism is not as big. Interestingly, they are more generous with their startup evaluations and investments. Time for one more round of t-tests to see if these observations hold water.
+
+```{r}
+# Automating t-tests to compare variables between participant gender groups.
+map(c("BS", "HS", "viable", "Invest"), ~t.test(reformulate("sex", response = .), data = study_1)) 
+```
+
+The results show that women indeed do endorse benevolent and hostile sexism less than men. They also gave the startup higher evaluation and higher funding. 
+
+## Scaling up: automating across studies
+
+With Study 1 under our belt, we're now ready to extend our analysis across multiple studies. In experimental psychological research like ours, it's common to conduct multiple studies. Each one might adjust certain variables or conditions to ensure that our observations are not just flukes but reflect genuine, robust phenomena.
+
+Now, obviously we can manually repeat the same codes for each study. But that can be both time-consuming and prone to human error. Automating is like having a trusted assistant who performs the same tasks for multiple datasets with unwavering accuracy, saving us time to focus on the bigger picture.
+
+### Automating descriptive stats calculation
+
+We start by writing a function. A function is like as a recipe - it takes various "ingredients" (data) and, through a series of "cooking" steps (processing), delivers a delectable "dish" (outcome).  In our case, the `perform_descriptive_analysis` function will take in the data for each study, calculate descriptive statistics for the whole sample and for separate groups, and serve up a comprehensive summary in a neatly organized dataframe.
+
+
+```{r}
+# Initial setup for descriptive analysis automation.
+perform_descriptive_analysis <- function(data, study_name) {
+  # Recoding the variables for clarity
+  data <- data %>%
+    mutate(
+      Condition = factor(case_when(Condition == 0 ~ "Men entrepreneur",
+                                   Condition == 1 ~ "Women entrepreneur",
+                                   TRUE ~ as.character(Condition)
+                                   )), 
+      sex = factor(case_when(sex == 0 ~ "Men participant",
+                             sex == 1 ~ "Women participant",
+                             TRUE ~ "Other participant gender"
+                             ))
+    )
+  
+  # Calculate stats for the entire sample to give us a baseline understanding of the dataset.
+  overall_stats <- data %>%
+    summarise(
+      across(
+        c(BS, HS, viable, Invest),
+        list(mean = ~mean(., na.rm = TRUE), sd = ~sd(., na.rm = TRUE))
+      ),
+      n = n() # Capturing sample size for each analysis segment.
+    ) %>% 
+    mutate(Condition = "Overall") # Labeling these stats as 'Overall' for easy identification.
+
+  # Calculate statistics for each experimental condition
+  condition_stats <- data %>%
+    group_by(Condition) %>%
+    summarise(
+      across(
+        c(BS, HS, viable, Invest),
+        list(mean = ~mean(., na.rm = TRUE), sd = ~sd(., na.rm = TRUE))
+      ),
+      n = n(),
+      .groups = 'drop' # Ensuring the grouped structure is dropped post-summarization for simplicity.
+    ) 
+
+  
+  # Calculate statistics for each participant gender group
+  participant_gender_stats <- data %>%
+    group_by(sex) %>%
+    summarise(
+      across(
+        c(BS, HS, viable, Invest),
+        list(mean = ~mean(., na.rm = TRUE), sd = ~sd(., na.rm = TRUE))
+      ),
+      n = n(),
+      .groups = 'drop'
+    ) %>%
+  mutate(Condition = as.character(sex)) %>% # Labeling these stats for each participant gender group
+  select(-sex)  # Removing the now redundant 'sex' column.
+
+  # Compiling all stats into one comprehensive dataframe.
+  combined_stats <- bind_rows(overall_stats, condition_stats, participant_gender_stats) 
+
+  return(combined_stats) # Delivering the compiled dataframe as the function's output.
 }
 ```
 
-## Applying the Function to Study 2
 
-We then apply this function to the dataset for Study 2.
-
-```{r}
-# Applying the function to Study 2 data
-results_study_2 <- generate_study_analysis(data = study_2, condition_var = "Condition", key_vars = c("sex", "BS", "HS", "viable", "Invest"))
-
-# Output: Sample size
-results_study_2$SampleSize
-
-# Output: Descriptive Statistics
-results_study_2$DescriptiveStats
-
-# Output: Correlation Matrix
-results_study_2$CorrelationMatrix
-
-# Output: Partial Correlations for BS and HS
-results_study_2$PartialCorrelationsBS
-results_study_2$PartialCorrelationsHS
-```
-
-## Applying the Function to Study 3
-
-Finally, we apply the function to the dataset for Study 3.
+Next, we can use `map_df` from the `purrr` package to apply the function. It's like having an army of robots at your disposal, each programmed to carry out the recipe on different datasets.
 
 ```{r}
-# Applying the function to Study 3 data
-results_study_3 <- generate_study_analysis(data = study_3, condition_var = "Condition", key_vars = c("sex", "BS", "HS", "viable", "Invest"))
+# List of datasets
+studies <- list(study_1 = study_1, study_2 = study_2, study_3 = study_3)
 
-# Output: Sample size
-results_study_3$SampleSize
+# Apply 'perform_descriptive_analysis' to each dataset using 'map_df'
+# '.id = "Study_Name"' adds a column with the name of each study, keeping track of which study each result came from.
+descriptive_results <- map_df(names(studies), ~perform_descriptive_analysis(studies[[.x]], .x), .id = "Study_name")
 
-# Output: Descriptive Statistics
-results_study_3$DescriptiveStats
-
-# Output: Correlation Matrix
-results_study_3$CorrelationMatrix
-
-# Output: Partial Correlations for BS and HS
-results_study_3$PartialCorrelationsBS
-results_study_3$PartialCorrelationsHS
+# Presenting the aggregated results.
+descriptive_results %>% mutate_if(is.numeric, ~ round(., 2)) %>% kable()
 ```
+
+### Visualizing observations across studies
+
+With our statistics in hand, we're ready to dive into some visualizations to better grasp our data! We'll start by looking at participant numbers for each study.
+
+```{r}
+descriptive_results %>% 
+  # filtering out entries tagged as 'Other participant gender' since there are too few participant in this group
+  filter(Condition != "Other participant gender") %>% 
+  # adjust the 'Condition' and 'Study_name' columns for clearer categorization and labeling in our visualizations.
+  mutate(
+    # Convert 'Condition' into a factor with specific levels for clear grouping in the plot.
+    # This helps in differentiating between the experimental conditions and participant gender groups.
+    Condition = factor(Condition, levels = c("Overall", "Men entrepreneur", "Women entrepreneur", "Men participant", "Women participant")),
+    # Similarly, convert 'Study_name' into a factor and assign more descriptive labels ('Study 1', 'Study 2', 'Study 3').
+    # This ensures that the plots clearly indicate which study the data is drawn from.
+    Study_name = factor(Study_name, levels = unique(Study_name), labels = c("Study 1", "Study 2", "Study 3"))
+  ) %>%
+  # Create a bar plot with 'Condition' on the x-axis, the number of participants ('n') on the y-axis, and color-coded by 'Condition'.
+  ggplot(aes(x = Condition, y = n, fill = Condition)) +
+  geom_bar(stat = "identity", position = position_dodge()) +  # 'stat="identity"' indicates that the heights of the bars represent data values.
+  # Add labels on top of each bar to display the exact number of participants. The 'position_dodge()' ensures the labels align with the bars.
+  geom_text(aes(label = n), position = position_dodge(width = 0.75), vjust = -0.25, size = 3, color = "gray50") +
+  # Use 'facet_wrap' to create separate plots for each study, enabling comparisons across studies.
+  facet_wrap(~ Study_name, scales = "free_x", nrow = 1) +
+  # Customize plot labels and theme for readability and aesthetics. Remove x-axis label for cleanliness.
+  labs(title = "Sample Size Across Studies", x = "", y = "Sample Size") +
+  theme_minimal() +  # Apply a minimal theme for a clean look.
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none") +  # Adjust text angle for better legibility.
+  scale_fill_brewer(palette = "Set1")  # Apply a color palette for visual distinction of conditions.
+
+```
+
+
+Study 2 has the highest number of participants (*n* = 572) while Study 3 has the lowest (*n* = 312). The difference makes sense; Study 2 was open to all US full-time employees, a much larger pool than Study 3's niche of people with previous experience in startup evaluation.
+
+The sample sizes across our experimental conditions are very balanced. And while there were more men than women in our participant pool across three studies, the numbers are close enough that we're all set for fair comparisons.
+
+
+### Exploring variable distributions across studies
+
+Now, let's take our analysis up a notch by diving into the distributions of our main variables across all three studies. By plotting histograms, we can visually grasp how participant responses vary for each variable—letting us spot trends, outliers, and overall patterns at a glance.
+
+```{r, warning=FALSE}
+# Define a function to create histograms for given variables across a single study.
+# This function takes the dataset, the name of the study, a list of variables to plot,
+# the bin widths for each histogram, the colors for the histograms, and x-axis limits.
+create_histograms <- function(data, study_name, variables, binwidths, colors, x_limits) {
+  # Loop through each variable to generate its histogram.
+  plots <- map(seq_along(variables), ~ {
+    # Create the histogram with specified aesthetics.
+    ggplot(data, aes(x = .data[[variables[.x]]])) +
+      geom_histogram(binwidth = binwidths[.x], fill = colors[.x], color = "white") + # No outline color for cleaner look.
+      ggtitle(paste(study_name, "-", variables[.x])) + # Title includes study name and variable.
+      theme_minimal() + # Minimalist theme for focus on the data.
+      xlim(x_limits[[.x]]) # Set x-axis limits based on predefined limits.
+  })
+  # Arrange the generated plots in a grid layout for easier comparison.
+  plot_grid(plotlist = plots, ncol = 2) 
+}
+
+# List of study names extracted from the studies list for iteration.
+study_names <- names(studies)
+
+# Generating histograms for each study by passing them through our custom function.
+map(study_names, ~create_histograms(studies[[.x]], .x, variables, binwidths, colors, x_limits))
+```
+
+For Studies 1 and 2, it's like most participants are on the same page in terms of their benevolent sexism scores, with scores clustering in a bell curve. But in Study 3, it's a different story: the curve flattens out before dipping, suggesting that while a range of moderately benevolent sexist attitudes is somewhat evenly spread among participants, extremely high benevolent sexist attitudes are rare. This is also the case for hostile sexism scores in Study 1. Yet, in Studies 2 and 3, the distribution of hostile sexism scores resembles a downward line, suggesting a general trend among the participants towards lower levels of hostile sexism, with high levels being progressively less common.
+
+Across the board, we're seeing bell curves when it comes to the distribution of perceived viability scores. This tells us that most participants gravitate towards a common middle ground when it comes to how viable they think the startups are. In constrast, with peaks and valleys, the multimodal distribution for investment decisions reveals distinct participant groups based on how much they're willing to invest.
+
+
+### Comparing experimental conditions and participant genders
+
+Up next, we transition from broad statistics to focused comparisons. Specifically, we're comparing the experimental conditions (men-led vs. women-led startups) and the participant genders. We'll look at the mean responses and the variability within these groups through bar charts. This visual approach gives us a straightforward way to see if there are any notable differences or if the groups are more alike than not.
+
+```{r}
+# Reshaping the results for easier visualization.
+descriptive_results %>%
+  # Transform our results to a long format
+  # Each variable (e.g., benevolent sexism, hostile sexism) gets expanded into two rows—one for mean and one for SD.
+  pivot_longer(cols = ends_with("_mean") | ends_with("_sd"), 
+               names_to = "Metric_Type", 
+               values_to = "Value") %>% 
+  separate(Metric_Type, into = c("Variable", "Stat"), sep = "_") %>% 
+  pivot_wider(names_from = Stat, values_from = Value) %>% 
+  # rename variables for a clearer understanding in the graphs.
+  mutate(Variable = str_replace(Variable, "BS", "Benevolent Sexism"),
+         Variable = str_replace(Variable, "HS", "Hostile Sexism"),
+         Variable = str_replace(Variable, "viable", "Perceived Viability"),
+         Variable = str_replace(Variable, "Invest", "Investment Decisions")) -> descriptive_results_long
+
+# Splitting the transformed data by study and condition/gender for targeted analysis.
+# This allows us to separately analyze and visualize the data for experimental conditions and participant genders across each study.
+condition_stats <- descriptive_results_long %>% filter(Condition %in% c("Men entrepreneur", "Women entrepreneur")) %>% split(.$Study_name)
+participant_gender_stats <- descriptive_results_long %>% filter(Condition %in% c("Men participant", "Women participant")) %>% rename(sex = Condition) %>% split(.$Study_name)
+```
+
+
+```{r}
+# Define a function to crafting bar charts that showcase mean values and include error bars for standard deviation.
+# This function is versatile, adapting to either compare experimental conditions or participant genders based on input.
+generate_plot_for_study <- function(data, group_var) {
+  # Determine whether we're plotting Condition or sex based on group_var parameter
+  fill_var <- if (group_var == "Condition") {
+    "Condition"
+  } else {
+    "sex"
+  }
+  
+  # Set the title dynamically based on the group_var
+  title_text <- if (group_var == "Condition") {
+    "Experimental Conditions"
+  } else {
+    "Participant Gender Groups"
+  }
+  
+  # Adjust the fill colors based on the group_var
+  fill_values <- if (group_var == "Condition") {
+    c("Men entrepreneur" = "#e8d21d", "Women entrepreneur" = "#039fbe")
+  } else {
+    c("Men participant" = "#ecc19c", "Women participant" = "#1e847f")
+  }
+  
+  # The plotting command constructs the bar chart, using aesthetic mappings specific to the comparison type ('Condition' or 'sex').
+  # 'geom_bar' creates the bars, 'geom_errorbar' adds the error bars, and 'facet_wrap' organizes variables into subplots for a comprehensive view.
+  ggplot(data, aes_string(x = fill_var, y = "mean", fill = fill_var)) +
+    geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
+    geom_errorbar(aes_string(ymin = "mean - sd", ymax = "mean + sd"), 
+                  position = position_dodge(width = 0.8), width = 0.25) +
+    facet_wrap(~Variable, scales = "free_y", ncol = 2) +
+    labs(title = title_text, x = "", y = "Mean with SD as error bars") +
+    theme_minimal() +
+    scale_fill_manual(values = fill_values) +
+    theme(legend.position = "none")
+}
+```
+
+```{r}
+# Generating and displaying the bar charts for experimental conditions.
+map(condition_stats, generate_plot_for_study, group_var = "Condition")
+```
+
+This visual dive shows us that for the most part, people in the men-led and women-led startup condition are remarkably consistent across various metrics. But Study 3 suggests a slight edge for women-led startups in perceived viability and funding.
+
+What about our men and women participants? Do they differ in these key variables?
+```{r}
+# Generating and displaying the bar charts for participant gender group 
+map(participant_gender_stats, generate_plot_for_study, group_var = "sex")
+```
+
+Here, the narrative remains steady. Women participants consistently show lower endorsement of sexist attitudes and are more generous in their evaluations and funding.
+
+
+### Performing t-tests across studies
+
+Now, we dive into t-tests to validate if what we saw in our charts stands up to statistical rigor.
+
+```{r}
+# Function to perform t-tests for specified variables across conditions and gender, ensuring comparability.
+perform_combined_t_tests <- function(data, study_name, variables) {
+  # Standardizing 'Condition' and 'sex' as factors to maintain clear and consistent group distinctions.
+  data <- data %>%
+    mutate(
+      Condition = factor(Condition,
+                         levels = c("0", "1"),
+                         labels = c("Men entrepreneur", "Women entrepreneur")),
+      sex = factor(sex,
+                   levels = c("0", "1"),
+                   labels = c("Men participant", "Women participant"))
+    )
+  
+  # Preparing to capture t-test results across all variables.
+  all_t_test_results <- list()
+  
+  # t-tests for comparing experimental conditions, encapsulating each result within a structured list.
+  condition_t_test_results <- map(variables, ~ {
+    t_test <- t.test(reformulate("Condition", response = .x), data = data)
+    list(variable = .x, 
+         comparison_type = "Condition", 
+         groups_compared = "Men entrepreneur vs Women entrepreneur", 
+         t_test_summary = broom::tidy(t_test))
+  })
+  all_t_test_results <- append(all_t_test_results, condition_t_test_results)
+  
+  # Similar t-tests for participant gender, again storing results in a structured format for easy interpretation.
+  gender_t_test_results <- map(variables, ~ {
+    t_test <- t.test(reformulate("sex", response = .x), data = data)
+    list(variable = .x, 
+         comparison_type = "Gender", 
+         groups_compared = "Men participant vs Women participant", 
+         t_test_summary = broom::tidy(t_test))
+  })
+  all_t_test_results <- append(all_t_test_results, gender_t_test_results)
+  
+  # Assembling t-test summaries into a cohesive dataframe, adding context about the variable and comparison type.
+  t_test_df <- map_df(all_t_test_results, ~ .x$t_test_summary) %>%
+    mutate(
+      variable = map_chr(all_t_test_results, ~ .x$variable),
+      Comparison = map_chr(all_t_test_results, ~ .x$groups_compared),
+      Study = study_name
+    )
+  
+  return(t_test_df)
+}
+
+# Executing t-tests across all studies and variables, reformatting for readability and context.
+map_df(study_names, ~perform_combined_t_tests(studies[[.x]], .x, variables), .id = "Study") %>% 
+  rename(
+    Mean_Difference = estimate, 
+    Mean_Group1 = estimate1,
+    Mean_Group2 = estimate2,
+    T_Statistic = statistic,
+    P_Value = p.value,
+    Degrees_of_Freedom = parameter,
+    CI_Low = conf.low,
+    CI_High = conf.high,
+    Test_Method = method,
+    Hypothesis_Testing = alternative,
+    Variable_Tested = variable,
+    Groups_Compared = Comparison
+  ) %>% 
+  relocate(Study, Variable_Tested, Groups_Compared) %>% 
+  arrange(Variable_Tested) -> ttest_results
+
+ttest_results %>% kable()
+```
+That's a lot of results. Let's break down these findings, starting with benevolent sexism.
+
+```{r}
+# Presenting t-test results specifically for benevolent sexism.
+ttest_results %>% filter(Variable_Tested == "BS") %>% kable()
+```
+
+In our studies, there's balance in benevolent sexism scores between conditions—thanks to random assignment. However, a noticeable gender gap emerges, with men participants showing higher levels.
+
+Next up, hostile sexism.
+
+```{r}
+# Presenting t-test results specifically for hostile sexism.
+ttest_results %>% filter(Variable_Tested == "HS") %>% kable()
+```
+Hostile sexsim scores follow a similar trend to benevolent sexism scores: no difference between experimental conditions and higher among men participants than women participants. 
+
+Similar to benevolent sexism, experimental conditions are balanced in terms of hostile sexism scores. Yet, men participants outscored women, indicating a gender divide.
+
+What about startup viability perceptions?
+
+```{r}
+# Presenting t-test results specifically for viability.
+ttest_results %>% filter(Variable_Tested == "viable") %>% kable()
+```
+
+Surprisingly, men- and women-led startups were seen as equally viable in most studies. An interesting deviation in Study 3 paints women-led startups more favorably. This upends common stereotypes, likely due the fact that in our experimental scenario the entrepreneurs are portrayed as highly competent and the startup was pre-tested to be seen as a viable idea. And, as we'll see in subsequent regression analyses, while on the surface there seems to be no bias, benevolent sexism actually plays a role in creating inequity in startup evaluation. 
+
+Lastly, the matter of investment decisions.
+
+```{r}
+ttest_results %>% filter(Variable_Tested == "Invest") %>% kable()
+```
+
+Financial backing was fairly even men- and women-led startups in all studies, though men participants were somewhat more conservative in their funding. This peels back layers on how participant gender influences startup support.
 
 # Summary
 
-In our analyses, we've computed means and standard deviations for our key variables  and analyze the correlations between them. These analyses set the stage for subsequent more complex regression analyses, where we examine the interaction between benevolent sexism and entrepreneur gender in shaping perceptions of startup viability.
+In this journey through our dataset, we've taken some crucial first steps before diving into the deeper waters of regression analysis. By calculating descriptive statistics, peeking at our sample sizes through colorful bar charts, exploring the shapes of our key variables with histograms, and comparing means across different groups with bar charts and t-tests, we've essentially mapped out the terrain of our data landscape. This initial exploration is not merely about crunching numbers—it's about getting to know the fundamental properties our data—recognizing its patterns, its quirks, and how it speaks to the larger story we're aiming to tell. In the next phase, we'll dive into another crucial step before regression analysis: exploring the relationships between variables through correlation analyses.

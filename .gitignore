@@ -2,7 +2,9 @@
 .Rhistory
 .RData
 .Ruserdata
+.DS_Store
 BenevolentSexism_StartupEvaluation.Rproj
+Correlation_analysis.qmd
 Descriptive_statistics_files/
 Descriptive_statistics_cache/
 Regression_analyses_files/
