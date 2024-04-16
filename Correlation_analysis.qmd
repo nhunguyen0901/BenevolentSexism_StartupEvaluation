@@ -1,0 +1,216 @@
+---
+title: "Correlation analysis: understanding the relationships among our variables"
+author: Julie Nguyen
+format:
+  html:
+    toc: true
+    toc-location: left
+    embed-resources: true
+editor: visual
+execute:
+  cache: true
+---
+
+In this notebook, I present the correlation analyses behind our research, "Benevolent Sexism and the Gender Gap in Startup Evaluation". We ask the question: Does benevolent sexism skew evaluators' views on the viability of startups led by men versus women? To dissect this, we orchestrated three experimental studies where participants were randomly assigned to evaluate startups led by either men or women, while we separately measured their levels of benevolent and hostile sexism.
+
+
+**Key variables include:**
+
+-   Entrepreneur gender (`Condition`) coded 0 for men and 1 for women entrepreneurs.
+-   Participant gender (`sex`) indicates the evaluator's gender, with 0 for men and 1 for women.
+-   Participant benevolent sexism (`BS`) and hostile sexism (`HS`) rated on a scale of 1-6, reflecting participants' endorsement of different forms of sexism
+-   Participant perceptions of startup viability (`viable`) assessed on a scale of 1-7, reflecting participants' views on the startup's potential success.
+-   Participant funding allocations (`Invest`) captures the financial commitment participants are willing to make, ranging from 0 to 100,000.
+
+**Navigating the analysis:**
+
+Our goal is to calculate linear and partial correlations among the key variables in our three studies. We first delve into Study 1's dataset to establish a benchmark for our correlation analyses, setting the stage to extend and automate these methods across Studies 2 and 3. 
+
+```{r setup}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+```{r}
+# Load the necessary libraries
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(purrr)
+library(Hmisc)
+library(psych)
+library(cowplot)
+library(corrplot)
+
+# Load the data for three studies 
+study_1 <- readRDS("/Users/mac/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 1/Data/R data/study_1.rds")
+study_2 <- readRDS("~/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 2/Data/R data/study_2.rds")
+study_3 <- readRDS("~/Library/CloudStorage/OneDrive-McGillUniversity/Work/Projects/BS in entre/Data/Main studies/Study 3/Data/R data/study_3.rds")
+
+```
+
+## Kicking off with study 1
+
+Welcome to our exploration into regression analyses! 🌟 Today, we're diving into the Study 1 dataset to tease out insights through correlation analyses of key variables. Let's get acquainted with our data:
+
+```{r}
+# Display the first few rows of the dataset to understand the structure and types of variables included in Study 1.
+study_1 %>% select(id, Condition, BS, HS, sex, viable, Invest) %>% head() %>% kableExtra::kable()
+```
+
+Here’s a quick look at our data. Each row captures details about an individual participant: their ID (`id`), the experimental condition they were assigned to (`Condition`), their levels of agreement with benevolent (`BS`) and hostile sexism (`HS`), their gender (`sex`), their assessment of the startup's viability (`viable`), and how much they were prepared to invest (`Invest`).
+
+Now, let's dive into the correlations to see if there are any significant linear relationships:
+```{r}
+# Calculating Pearson correlations among selected variables to identify any significant relationships.
+cor_matrix <- rcorr(as.matrix(study_1 %>% select(BS, HS, viable, Invest)), type = "pearson")
+cor_matrix
+```
+
+People who endorse benevolent sexism often also endorse hostile sexism, but neither form of sexism significantly correlates with perceptions of startup viability or investment levels.
+
+Let's create a heatmap of the correlation matrix, which is a clear and intuitive way to see the relationships between the variables. 
+
+```{r}
+# Visualize the correlation matrix with corrplot
+corrplot(cor_matrix$r, # Extract the correlation matrix for plotting
+         method = "color", # Use color tiles to show correlation values
+         type = "upper", # Show the upper part of the correlation matrix
+         order = "hclust", # Order variables based on hierarchical clustering
+         tl.col = "black", # Color of text labels
+         tl.srt = 45, # Rotation of text labels
+         col = colorRampPalette(c("#6D9EC1", "white", "#E46726"))(200), # Define color scale: Red for positive, blue for negative
+         addCoef.col = "black")  # Add correlation coefficients to the plot for clarity
+```
+
+To delve deeper, we'll also look at partial correlations to understand the relationships between two variables while controlling for the influence of another. First up, let’s control for hostile sexism and explore the relationship between benevolent sexism and our outcomes (startup viability and investment levels):
+
+```{r}
+# Examining the influence of Benevolent Sexism on startup viability and investment decisions, controlling for Hostile Sexism.
+study_1 %>% 
+  select(BS, viable, Invest, HS) %>% 
+  psych::partial.r(c("BS", "viable", "Invest"),"HS") %>% # Calculate partial correlations between 'BS', 'viable', 'Invest' controlling for 'HS'.
+  psych::corr.p(n=nrow(study_1)) # Compute p-values for these partial correlations based on the sample size of study_1.
+```
+Turns out, benevolent sexism is positively correlated with perceived startup viability, but is unrelated to investment amounts when we remove the effects of hostile sexism.
+
+Next, we control for benevolent sexism to explore how hostile sexism alone might affect startup outcomes:
+
+```{r}
+# Exploring the relationship between Hostile Sexism and key outcomes, controlling for Benevolent Sexism.
+study_1 %>% 
+  select(BS, viable, Invest, HS) %>% 
+  psych::partial.r(c("HS", "viable", "Invest"),"BS") %>% # Calculate partial correlations between 'HS', 'viable', 'Invest' controlling for 'BS'.
+  psych::corr.p(n=nrow(study_1)) # Compute p-values for these partial correlations based on the sample size.
+```
+
+Here we see a pattern: higher levels of hostile sexism correlate with lower perceptions of startup viability, independent of benevolent sexism. However, this attitude doesn’t seem to influence the amount of funding participants are willing to invest.
+
+## Automating across studies 
+
+### Implementing automation 
+
+Having completed our correlation analyses with Study 1, we are now poised to extend these methods to encompass additional studies. In the realm of experimental psychological research, such as ours, it is a standard practice to conduct multiple studies. This allows us to fine-tune the variables or conditions and ensure that our findings are not mere artifacts but robust, replicable phenomena. Repeating the same analyses manually for each study, though feasible, is not only time-consuming but also susceptible to errors. Automation helps us the same tasks across various datasets with precision. This saves valuable time and enhances the reliability of our results, freeing us to focus on broader research implications.
+
+We begin by defining a function that will handle the data for each study. This function will calculate both linear and partial correlations and store these in a list for easy access. Here's how we set it up:
+
+```{r}
+perform_correlation_analysis <- function(data) {
+  # Calculate Pearson correlation for key variables
+  pearson_cor <- rcorr(as.matrix(data %>% select(BS, HS, viable, Invest)), type = "pearson")
+         
+  # Compute partial correlations controlling for Hostile Sexism
+  partial_cor_bs <- data %>% partial.r(c("BS", "viable", "Invest"), "HS") %>% corr.p(n=nrow(data))
+  
+  # Compute partial correlations controlling for Benevolent Sexism
+  partial_cor_hs <- data %>% partial.r(c("HS", "viable", "Invest"), "BS") %>% corr.p(n=nrow(data))
+
+  # Return results as a list
+  list(
+    Pearson = pearson_cor,
+    Partial_BS = partial_cor_bs,
+    Partial_HS = partial_cor_hs
+  )
+}
+
+# Define the datasets for each study
+data_sets <- list(study_1 = study_1, study_2 = study_2, study_3 = study_3)
+
+# Apply the function to each dataset using map
+results <- map(data_sets, perform_correlation_analysis)
+```
+
+### Visualizing and interpreting correlations
+
+To visually interpret the relationships between our study variables, let's create heatmaps for each study's correlation matrix. These visualizations allow us to quickly grasp the strength and direction of associations between sexism, perceptions of viability, and investment decisions.
+
+```{r}
+# Generate and display heatmaps for each study's correlation matrix
+heatmaps <- map(results, ~ {
+  # Generate the correlation plot
+  corrplot(.x$Pearson$r, 
+           method = "color", 
+           type = "upper", 
+           order = "hclust", 
+           tl.col = "black", 
+           tl.srt = 45, 
+           col = colorRampPalette(c("#6D9EC1", "white", "#E46726"))(200),
+           addCoef.col = "black")
+})
+
+```
+Let's also take a look at the p-values from Pearson's correlation for each study to get their statistical significance.
+
+```{r}
+options(scipen = 999)
+# Displaying p-values for Pearson correlations in Study 1
+results$study_1$Pearson$P
+```
+```{r}
+# Displaying p-values for Pearson correlations in Study 2
+results$study_2$Pearson$P
+```
+```{r}
+# Displaying p-values for Pearson correlations in Study 3
+results$study_3$Pearson$P
+```
+
+
+The consistent positive correlation between benevolent and hostile sexism across all studies (ranging from 0.41 to 0.47) suggests those who hold seemingly subtle sexist attitudes may also harbor more overtly negative biases. Intriguingly, these forms of sexism generally do not correlate with how startups are perceived in terms of viability or investment, with an exception in Study 2 where a positive link emerges with perceived viability.
+
+Next, we consider how these relationships change when accounting for the influence of other forms of sexism. This gives us a clearer picture of the independent effect of each form of sexism.
+
+```{r}
+# Partial correlations adjusting for Hostile Sexism in Study 1
+results$study_1$Partial_BS
+```
+```{r}
+# Partial correlations adjusting for Hostile Sexism in Study 2
+results$study_2$Partial_BS
+```
+```{r}
+# Partial correlations adjusting for Hostile Sexism in Study 3
+results$study_3$Partial_BS
+```
+
+
+When controlling for hostile sexism, benevolent sexism consistently predicts a higher perceived viability of startups. 
+
+What about the correlation between hostile sexism and startup outcomes when benevolent sexism is controlled?
+```{r}
+# Partial correlations adjusting for Benevolent Sexism in Study 1
+results$study_1$Partial_HS
+```
+```{r}
+# Partial correlations adjusting for Benevolent Sexism in Study 2
+results$study_2$Partial_HS
+```
+
+```{r}
+# Partial correlations adjusting for Benevolent Sexism in Study 3
+results$study_3$Partial_HS
+```
+Hostile sexism shows a negative correlation with perceptions of startup viability, which is the opposite pattern to benevolent sexism. 
+
+## Summary 
+
+Throughout this notebook, we've explored and visualized the intricate web of relationships between different forms of sexism, perceptions of startup viability, and investment decisions. Using Pearson and partial correlation analyses, we get an initial sense of how different sexist attitudes can influence startup evaluations. Moving forward, these analyses set a foundation for regression models that will help us dissect these relationships more comprehensively. 

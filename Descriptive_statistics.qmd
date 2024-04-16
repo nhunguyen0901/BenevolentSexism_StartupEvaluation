@@ -11,9 +11,7 @@ execute:
   cache: true
 ---
 
-In this notebook, we presents the analysis behind our research, "Benevolent Sexism and the Gender Gap in Startup Evaluation," featured in [Entrepreneurship: Theory and Practice](https://journals.sagepub.com/doi/10.1177/10422587231178865) and [The Conversation Canada](https://theconversation.com/benevolent-sexism-in-startups-widens-the-gender-gap-by-advantaging-men-over-women-222486). Our study explores into how evaluators' benevolent sexism might influence their assessment of startups, contingent on the founder's gender.
-
-At the heart of our investigation lies a critical question: Does benevolent sexism skew evaluators' views on the viability of startups led by men versus women? To dissect this, we orchestrated three experimental studies. Participants were subtly assigned to evaluate startups headed by either gender, while we separately measured their levels of benevolent and hostile sexism.
+In this notebook, I present the descriptive statistics analyses behind our research, "Benevolent Sexism and the Gender Gap in Startup Evaluation". In this project, we ask the question: Does benevolent sexism skew evaluators' views on the viability of startups led by men versus women? To dissect this, we orchestrated three experimental studies where we randomly assign participants to evaluate startups led by men or women, then we separately measured their levels of benevolent and hostile sexism.
 
 **Key variables include:**
 
@@ -25,7 +23,15 @@ At the heart of our investigation lies a critical question: Does benevolent sexi
 
 **Navigating the analysis:**
 
-We kick-started our analytical journey with Study 1 and then automate the process across three studies. Specifically, we calculated descriptive statistics for key variables for the whole sample and separately for each experimental condition and each participant gender group. We then visualize sample sizes to assess participant distribution, create histograms to understand variable distributions, comparing means and standard deviations across groups via bar charts, and testing these group differences through t-tests. In doing so, we gain an understanding the basic structure and distribution of our data, setting the stage for more complex regression analyses later on.
+We kick-start our journey with Study 1 and then automate the process across three studies. Specifically, here's what we will do 
+
+- We calculate descriptive statistics like mean and standard deviation for key variables for the whole sample and separately for each experimental condition and each participant gender group. 
+- We create bar charts to visualize sample sizes across different groups to ensure a balanced experimental setup.
+- We create histograms to understand  the spread and skewness of our key variables.
+- We compare means and standard deviations across different groups via bar charts.
+- Finally, we test visual observations statistically to confirm or refute any apparent group differences.
+
+In doing so, we gain an understanding the basic structure and distribution of our data, setting the stage for more complex regression analyses later on.
 
 
 ```{r setup}
@@ -610,4 +616,4 @@ Financial backing was fairly even men- and women-led startups in all studies, th
 
 # Summary
 
-In this journey through our dataset, we've taken some crucial first steps before diving into the deeper waters of regression analysis. By calculating descriptive statistics, peeking at our sample sizes through colorful bar charts, exploring the shapes of our key variables with histograms, and comparing means across different groups with bar charts and t-tests, we've essentially mapped out the terrain of our data landscape. This initial exploration is not merely about crunching numbers—it's about getting to know the fundamental properties our data—recognizing its patterns, its quirks, and how it speaks to the larger story we're aiming to tell. In the next phase, we'll dive into another crucial step before regression analysis: exploring the relationships between variables through correlation analyses.
+In this journey through our dataset, we've taken some crucial first steps before diving into the deeper waters of regression analysis: calculating descriptive statistics, peeking at our sample sizes through colorful bar charts, exploring the shapes of our key variables with histograms, and comparing means across different groups with bar charts and t-tests. In doing so, we get to know the fundamental properties our data—recognizing its patterns, its quirks, and how it speaks to the larger story we're aiming to tell. In the next phase, we'll dive into another crucial step: exploring the relationships between variables through correlation analyses.
