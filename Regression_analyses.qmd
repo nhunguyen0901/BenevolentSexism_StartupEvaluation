@@ -13,7 +13,7 @@ execute:
 
 # Overview
 
-This documents presents the statistical analyses from our ["Benevolent Sexism and the Gender Gap in Startup Evaluation" study](https://journals.sagepub.com/doi/10.1177/10422587231178865) published in 2023 in the journal Entrepreneurship: Theory and Practice. We wanted to know whether startup evaluators' benevolent sexist attitudes impacts how viable they believe startups are, depending on the gender of the founder. To find out, we set up three experimental studies where we randomly assigned participants to evaluate startups led either by men or women, while also measuring their endorsement of benevolent sexism.
+This documents presents the statistical analyses from our "Benevolent Sexism and the Gender Gap in Startup Evaluation" study. We wanted to know whether startup evaluators' benevolent sexist attitudes impacts how viable they believe startups are, depending on the gender of the founder. To find out, we set up three experimental studies where we randomly assigned participants to evaluate startups led either by men or women, while also measuring their endorsement of benevolent sexism.
 
 **Key variables**
 
